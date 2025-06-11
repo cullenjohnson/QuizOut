@@ -1,5 +1,6 @@
 import sys
 import os
+import configparser
 import asyncio
 import threading
 import logging
@@ -9,24 +10,71 @@ from PySide6.QtCore import Signal, QObject
 
 from SocketClient import SocketClient
 
-def setup_logging():
+default_config = {
+        'server': {
+            'url': 'http://localhost:5000',
+            'reconnection': 'True',
+            'reconnection_attempts': '5',
+            'reconnection_delay': '1',
+            'reconnection_delay_max': '5'
+        },
+        'logging': {
+            'level': 'DEBUG',
+            'console_handler': 'True',
+            'file_handler': 'True',
+            'log_backup_count': '7'
+        }
+}
+
+def setup_app():
+    os.makedirs(f'{os.path.expanduser("~")}/.socketClient/log', exist_ok=True)
+
+    config = get_config()
+    loggingConfig = config['logging']
+
     logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
+
+    loggingLevel = loggingConfig.get('level', fallback='DEBUG').upper()
+
+    logger.setLevel(loggingLevel)
 
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-    consoleHandler = logging.StreamHandler()
-    consoleHandler.setLevel(logging.DEBUG)
-    consoleHandler.setFormatter(formatter)
+    if loggingConfig.getboolean('console_handler', fallback=True):
+        consoleHandler = logging.StreamHandler()
+        consoleHandler.setLevel(loggingLevel)
+        consoleHandler.setFormatter(formatter)
+
+        logger.addHandler(consoleHandler)
+
+    if loggingConfig.getboolean('file_handler', fallback=True):
+        fileHandler = logging.handlers.TimedRotatingFileHandler(
+            f'{os.path.expanduser("~")}/.socketClient/log/client.log',
+            when='midnight',
+            interval=1,
+            backupCount=loggingConfig.getint('log_backup_count', fallback=7))
+
+        fileHandler.setLevel(loggingLevel)
+        fileHandler.setFormatter(formatter)
+
+        logger.addHandler(fileHandler)
 
 
-    os.makedirs(f'{os.path.expanduser("~")}/.socketClient/log', exist_ok=True)
-    fileHandler = logging.handlers.TimedRotatingFileHandler(f'{os.path.expanduser("~")}/.socketClient/log/client.log', when='midnight', interval=1, backupCount=7)
-    fileHandler.setLevel(logging.DEBUG)
-    fileHandler.setFormatter(formatter)
+    return config
 
-    logger.addHandler(consoleHandler)
-    logger.addHandler(fileHandler)
+def get_config():
+    config = configparser.ConfigParser()
+    config_path = os.path.expanduser("~/.socketClient/client-config.ini")
+
+    if not os.path.exists(config_path):
+        os.makedirs(os.path.expanduser('~/.socketClient'), exist_ok=True)
+        with open(config_path, 'w') as configfile:
+            config.read_dict(default_config)
+            config.write(configfile)
+        return config
+
+    config.read(config_path)
+    return config
 
 class Communicator(QObject):
     connected = Signal()
@@ -34,7 +82,7 @@ class Communicator(QObject):
     messageReceived = Signal(str)
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, config):
         super().__init__()
         self.logger = logging.getLogger()
 
@@ -44,7 +92,7 @@ class MainWindow(QMainWindow):
         self.comm.messageReceived.connect(self.on_message)
 
         self.socket_client = SocketClient(
-            url="http://localhost:5000",
+            config=config['server'],
             on_connect=self.comm.connected.emit,
             on_disconnect=self.comm.disconnected.emit,
             on_message=self.comm.messageReceived.emit
@@ -142,8 +190,8 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == "__main__":
-    setup_logging()
+    config = setup_app()
     app = QApplication(sys.argv)
-    window = MainWindow()
+    window = MainWindow(config)
     window.show()
     sys.exit(app.exec())

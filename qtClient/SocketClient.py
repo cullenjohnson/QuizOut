@@ -4,15 +4,16 @@ from socketio import AsyncClient
 class SocketClient:
     callbacks = None
 
-    def __init__(self, url, logger=None, on_message=None, on_connect=None, on_disconnect=None):
+    def __init__(self, config, on_message=None, on_connect=None, on_disconnect=None):
         self.logger = logging.getLogger()
+        url = config.get('url', 'http://localhost:5000')
 
         self.sio = AsyncClient(handle_sigint=True)
         self.sio.connection_url = url
-        self.sio.reconnection = True
-        self.sio.reconnection_attempts = 5
-        self.sio.reconnection_delay = 1
-        self.sio.reconnection_delay_max = 5
+        self.sio.reconnection = config.getboolean('reconnection', True)
+        self.sio.reconnection_attempts = config.getint('reconnection_attempts', 5)
+        self.sio.reconnection_delay = config.getint('reconnection_delay', 1)
+        self.sio.reconnection_delay_max = config.getint('reconnection_delay_max', 5)
 
         self.url = url
 

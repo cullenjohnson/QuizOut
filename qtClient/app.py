@@ -5,7 +5,7 @@ import asyncio
 import threading
 import logging
 import logging.handlers
-from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QTextEdit
+from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QMessageBox
 from PySide6.QtCore import Signal, QObject
 
 from SocketClient import SocketClient

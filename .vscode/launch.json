@@ -11,6 +11,7 @@
             "program": "qtClient/app.py",
             "console": "integratedTerminal",
             "python": ".venv/Scripts/python",
+            "consoleName": "debugpy: CLIENT",
             "env": {
                 "VIRTUAL_ENV": ".venv",
                 "PATH": ".venv/Scripts:${env:PATH}"
@@ -22,11 +23,14 @@
             "request": "launch",
             "module": "flask",
             "python": ".venv/Scripts/python",
+            "consoleName": "debugpy: SERVER",
             "env": {
                 "VIRTUAL_ENV": ".venv",
                 "PATH": ".venv/Scripts:${env:PATH}",
                 "FLASK_APP": "app.py",
-                "FLASK_DEBUG": "1"
+                "FLASK_DEBUG": "1",
+                "FLASK_RUN_PORT": "8000",
+                "FLASK_RUN_HOST": "0.0.0.0"
             },
             "args": [
                 "run",

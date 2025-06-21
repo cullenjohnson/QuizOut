@@ -31,23 +31,24 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'  # Replace with your own secret key
 
 socketio = SocketIO(app, async_mode='threading')
+logger.info("SocketIO server started")
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
 @socketio.event
-def connect(sid, data = None):
+def connect(data = None):
     if data:
-        logger.info(f'Client [sid {sid}] connected with data:', data)
+        logger.info(f'Client [sid {request.sid}] connected with data:', data)
     else:
-        logger.info(f'Client [sid {sid}] connected')
+        logger.info(f'Client [sid {request.sid}] connected')
     socketio.emit('response', 'Welcome to the SocketIO server!')
 
 @socketio.event
-def message(sid, data):
-    logger.debug(f'Client [sid {sid}] sent message:{data} on namespace: {request.namespace}')
-    socketio.emit('response', 'Server received message: ' + data)
+def message(data = None):
+    logger.debug(f'Client [sid {request.sid}] sent message:{data}.')
+    socketio.emit('response', f'Server received message: {data}')
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)

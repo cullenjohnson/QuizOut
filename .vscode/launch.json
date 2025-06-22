@@ -8,13 +8,13 @@
             "name": "Client",
             "type": "debugpy",
             "request": "launch",
-            "program": "qtClient/app.py",
+            "program": "flask-socketio-client/app.py",
             "console": "integratedTerminal",
-            "python": ".venv/Scripts/python",
-            "consoleName": "debugpy: CLIENT",
+            "python": "flask-socketio-client/.venv/Scripts/python",
+            "consoleName": "CLIENT debugpy",
             "env": {
                 "VIRTUAL_ENV": ".venv",
-                "PATH": ".venv/Scripts:${env:PATH}"
+                "PATH": "flask-socketio-client/.venv/Scripts:${env:PATH}"
             },
         },
         {
@@ -22,12 +22,12 @@
             "type": "debugpy",
             "request": "launch",
             "module": "flask",
-            "python": ".venv/Scripts/python",
-            "consoleName": "debugpy: SERVER",
+            "python": "flask-socketio-server/.venv/Scripts/python",
+            "consoleName": "SERVER debugpy",
             "env": {
                 "VIRTUAL_ENV": ".venv",
-                "PATH": ".venv/Scripts:${env:PATH}",
-                "FLASK_APP": "app.py",
+                "PATH": "flask-socketio-server/.venv/Scripts:${env:PATH}",
+                "FLASK_APP": "flask-socketio-server/app.py",
                 "FLASK_DEBUG": "1",
                 "FLASK_RUN_PORT": "8000",
                 "FLASK_RUN_HOST": "0.0.0.0"

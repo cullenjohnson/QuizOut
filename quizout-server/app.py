@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO
+from dotenv import load_dotenv
 import logging
 import logging.handlers
 import os
@@ -16,8 +17,8 @@ def setup_logging():
     consoleHandler.setFormatter(formatter)
 
 
-    os.makedirs(f'{os.path.expanduser("~")}/.socketClient/log', exist_ok=True)
-    fileHandler = logging.handlers.TimedRotatingFileHandler(f'{os.path.expanduser("~")}/.socketClient/log/server.log', when='midnight', interval=1, backupCount=7)
+    os.makedirs(f'{os.path.expanduser("~")}/.quizoutserver/log', exist_ok=True)
+    fileHandler = logging.handlers.TimedRotatingFileHandler(f'{os.path.expanduser("~")}/.quizoutserver/log/server.log', when='midnight', interval=1, backupCount=7)
     fileHandler.setLevel(logging.DEBUG)
     fileHandler.setFormatter(formatter)
 
@@ -26,9 +27,15 @@ def setup_logging():
     return logger
 
 
+load_dotenv()
+
+api_secret_path = os.path.join(os.path.expanduser(os.getenv("SECRET_LOCATION")), "api_secret")
+
 logger = setup_logging()
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your_secret_key'  # Replace with your own secret key
+with open(api_secret_path, "r") as f:
+    app.config['SECRET_KEY'] = f.read()
+    logger.info(app.config['SECRET_KEY'][:1] + "********")
 
 socketio = SocketIO(app, async_mode='threading')
 logger.info("SocketIO server started")
@@ -43,7 +50,7 @@ def connect(data = None):
         logger.info(f'Client [sid {request.sid}] connected with data:', data)
     else:
         logger.info(f'Client [sid {request.sid}] connected')
-    socketio.emit('response', 'Welcome to the SocketIO server!')
+    socketio.emit('response', 'Welcome to the QuizOut server!')
 
 @socketio.event
 def message(data = None):

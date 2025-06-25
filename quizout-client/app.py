@@ -12,7 +12,7 @@ from SocketClient import SocketClient
 
 default_config = {
         'server': {
-            'url': 'http://localhost:5000',
+            'url': 'http://localhost:8000',
             'reconnection': 'True',
             'reconnection_attempts': '5',
             'reconnection_delay': '1',
@@ -27,7 +27,7 @@ default_config = {
 }
 
 def setup_app():
-    os.makedirs(f'{os.path.expanduser("~")}/.socketClient/log', exist_ok=True)
+    os.makedirs(f'{os.path.expanduser("~")}/.quizoutclient/log', exist_ok=True)
 
     config = get_config()
     loggingConfig = config['logging']
@@ -49,7 +49,7 @@ def setup_app():
 
     if loggingConfig.getboolean('file_handler', fallback=True):
         fileHandler = logging.handlers.TimedRotatingFileHandler(
-            f'{os.path.expanduser("~")}/.socketClient/log/client.log',
+            f'{os.path.expanduser("~")}/.quizoutclient/log/client.log',
             when='midnight',
             interval=1,
             backupCount=loggingConfig.getint('log_backup_count', fallback=7))
@@ -64,10 +64,10 @@ def setup_app():
 
 def get_config():
     config = configparser.ConfigParser()
-    config_path = os.path.expanduser("~/.socketClient/client-config.ini")
+    config_path = os.path.expanduser("~/.quizoutclient/client-config.ini")
 
     if not os.path.exists(config_path):
-        os.makedirs(os.path.expanduser('~/.socketClient'), exist_ok=True)
+        os.makedirs(os.path.expanduser('~/.quizoutclient'), exist_ok=True)
         with open(config_path, 'w') as configfile:
             config.read_dict(default_config)
             config.write(configfile)

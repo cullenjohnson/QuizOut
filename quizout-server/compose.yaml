@@ -1,0 +1,18 @@
+services:
+  quizoutserver:
+    environment:
+      - SECRET_LOCATION=/run/secrets/
+    build: .
+    ports:
+      - "8000:8000"
+    secrets:
+      - api_key
+      - api_secret
+      - db_pass
+secrets:
+  api_key:
+    file: ~/.quizoutserver/secrets/api_key
+  api_secret:
+    file: ~/.quizoutserver/secrets/api_secret
+  db_pass:
+    file: ~/.quizoutserver/secrets/db_pass

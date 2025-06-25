@@ -8,13 +8,13 @@
             "name": "Client",
             "type": "debugpy",
             "request": "launch",
-            "program": "flask-socketio-client/app.py",
+            "program": "quizout-client/app.py",
             "console": "integratedTerminal",
-            "python": "flask-socketio-client/.venv/Scripts/python",
+            "python": "quizout-client/.venv/Scripts/python",
             "consoleName": "CLIENT debugpy",
             "env": {
                 "VIRTUAL_ENV": ".venv",
-                "PATH": "flask-socketio-client/.venv/Scripts:${env:PATH}"
+                "PATH": "quizout-client/.venv/Scripts:${env:PATH}"
             },
         },
         {
@@ -22,12 +22,12 @@
             "type": "debugpy",
             "request": "launch",
             "module": "flask",
-            "python": "flask-socketio-server/.venv/Scripts/python",
+            "python": "quizout-server/.venv/Scripts/python",
             "consoleName": "SERVER debugpy",
             "env": {
                 "VIRTUAL_ENV": ".venv",
-                "PATH": "flask-socketio-server/.venv/Scripts:${env:PATH}",
-                "FLASK_APP": "flask-socketio-server/app.py",
+                "PATH": "quizout-server/.venv/Scripts:${env:PATH}",
+                "FLASK_APP": "quizout-server/app.py",
                 "FLASK_DEBUG": "1",
                 "FLASK_RUN_PORT": "8000",
                 "FLASK_RUN_HOST": "0.0.0.0"

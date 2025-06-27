@@ -27,7 +27,7 @@
             "env": {
                 "VIRTUAL_ENV": ".venv",
                 "PATH": "quizout-server/.venv/Scripts:${env:PATH}",
-                "FLASK_APP": "quizout-server/app.py",
+                "FLASK_APP": "quizout-server/app",
                 "FLASK_DEBUG": "1",
                 "FLASK_RUN_PORT": "8000",
                 "FLASK_RUN_HOST": "0.0.0.0"

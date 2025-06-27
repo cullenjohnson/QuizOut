@@ -36,7 +36,7 @@ class SocketClient:
         @self.sio.event
         async def disconnect():
             self.logger.info('Disconnected from server')
-            self.on_disconnect
+            self.on_disconnect()
 
         @self.sio.on('response')
         async def response(message=None):

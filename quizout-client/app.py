@@ -80,6 +80,7 @@ class Communicator(QObject):
     connected = Signal()
     disconnected = Signal()
     messageReceived = Signal(str)
+    clientError = Signal(Exception)
 
 class MainWindow(QMainWindow):
     def __init__(self, config):
@@ -90,6 +91,7 @@ class MainWindow(QMainWindow):
         self.comm.connected.connect(self.on_connected)
         self.comm.disconnected.connect(self.on_disconnected)
         self.comm.messageReceived.connect(self.on_message)
+        self.comm.clientError.connect(self.on_client_error)
 
         self.socket_client = SocketClient(
             config=config['server'],
@@ -99,10 +101,20 @@ class MainWindow(QMainWindow):
         )
 
         self.loop = asyncio.new_event_loop()
+        self.new_client_thread()
+
+        self.init_ui()
+
+    def new_client_thread(self):
         self.client_thread = threading.Thread(target=self.start_loop, daemon=True)
         self.client_thread.start()
 
-        self.init_ui()
+    def on_client_error(self, e):
+        self.logger.error(f"Failed to connect to server: {e}")
+        self.alertDialog = QMessageBox(self)
+        self.alertDialog.setText(f"Failed to connect to server: {e}")
+        self.alertDialog.setWindowTitle("Connection Error")
+        self.alertDialog.exec()
 
     def init_ui(self):
         self.setWindowTitle('Hello World')
@@ -127,15 +139,20 @@ class MainWindow(QMainWindow):
 
     def start_loop(self):
         asyncio.set_event_loop(self.loop)
-        self.loop.run_until_complete(self.socket_client.start())
+        try:
+            self.loop.run_until_complete(self.socket_client.start())
+        except Exception as e:
+                self.comm.clientError.emit(e)
 
     def on_connected(self):
+        logging.info("Connected to server!")
         self.clientConnected = True
         self.connectButton.setEnabled(False)
         self.disconnectButton.setEnabled(True)
         self.sendButton.setEnabled(True)
 
     def on_disconnected(self):
+        logging.info("Disconnected from server.")
         self.clientConnected = False
         self.connectButton.setEnabled(True)
         self.disconnectButton.setEnabled(False)
@@ -163,15 +180,7 @@ class MainWindow(QMainWindow):
 
     def on_connect_click(self):
         self.logger.info('Connecting to server...')
-        try:
-            self.start_loop()
-            self.logger.info('Connected to server!')
-        except Exception as e:
-            self.logger.error(f"Failed to connect to server: {e}")
-            self.alertDialog = QMessageBox(self)
-            self.alertDialog.setText(f"Failed to connect to server: {e}")
-            self.alertDialog.setWindowTitle("Connection Error")
-            self.alertDialog.exec()
+        self.new_client_thread()
 
     def on_disconnect_click(self):
         self.logger.info('Disconnecting from server...')
@@ -180,7 +189,6 @@ class MainWindow(QMainWindow):
                 self.socket_client.disconnect(),
                 self.loop
             )
-            self.logger.info('Disconnected from server!')
         except Exception as e:
             self.logger.error(f"Failed to disconnect from server: {e}")
             self.alertDialog = QMessageBox(self)

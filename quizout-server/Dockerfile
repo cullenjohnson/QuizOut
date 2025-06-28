@@ -14,4 +14,6 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-CMD ["gunicorn", "-k", "gevent", "-w", "1", "app:app", "-b", "0.0.0.0:8000"]
+RUN chmod a+x docker-run.sh
+
+CMD ["sh", "docker-run.sh"]

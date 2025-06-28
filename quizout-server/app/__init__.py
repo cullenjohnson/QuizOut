@@ -1,35 +1,53 @@
-from flask import Flask, render_template, request
+from flask import Flask
+from flask_login import LoginManager
 from flask_socketio import SocketIO
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from dotenv import load_dotenv
 from .sharedLogger import logger
 import os
 
 # init SQLAlchemy
 db = SQLAlchemy()
+migrate = Migrate()
 
 socketio = SocketIO()
 
 load_dotenv()
 
-app = Flask(__name__)
+def create_app():
+    app = Flask(__name__)
 
-api_secret_path = os.path.join(os.path.expanduser(os.getenv("SECRET_LOCATION")), "api_secret")
-with open(api_secret_path, "r") as f:
-    app.config['SECRET_KEY'] = f.read()
+    login_manager = LoginManager()
+    login_manager.login_view = 'auth.login'
+    login_manager.init_app(app)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
+    from .models import User
 
-db.init_app(app)
+    @login_manager.user_loader
+    def load_user(user_id):
+        # since the user_id is just the primary key of our user table, use it in the query for the user
+        return User.query.get(int(user_id))
 
-# blueprint for auth routes in our app
-from .main import auth_blueprint
-app.register_blueprint(auth_blueprint)
+    api_secret_path = os.path.join(os.path.expanduser(os.getenv("SECRET_LOCATION")), "api_secret")
+    with open(api_secret_path, "r") as f:
+        app.config['SECRET_KEY'] = f.read()
 
-# blueprint for non-auth parts of app
-from .main import main_blueprint
-app.register_blueprint(main_blueprint)
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
 
-socketio.init_app(app, async_mode="threading")
+    db.init_app(app)
+    migrate.init_app(app, db)
 
-logger.info("SocketIO server started")
+    # blueprint for auth routes in our app
+    from .main import auth_blueprint
+    app.register_blueprint(auth_blueprint)
+
+    # blueprint for non-auth parts of app
+    from .main import main_blueprint
+    app.register_blueprint(main_blueprint)
+
+    socketio.init_app(app, async_mode="threading")
+
+    logger.info("SocketIO server started")
+
+    return app

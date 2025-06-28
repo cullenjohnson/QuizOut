@@ -23,11 +23,11 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
 db.init_app(app)
 
 # blueprint for auth routes in our app
-# from .auth import auth as auth_blueprint
-# app.register_blueprint(auth_blueprint)
+from .main import auth_blueprint
+app.register_blueprint(auth_blueprint)
 
 # blueprint for non-auth parts of app
-from .main import main as main_blueprint
+from .main import main_blueprint
 app.register_blueprint(main_blueprint)
 
 socketio.init_app(app, async_mode="threading")

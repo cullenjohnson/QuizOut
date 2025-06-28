@@ -1,6 +1,6 @@
 from flask import Blueprint
 
-main = Blueprint('main', __name__)
-auth = Blueprint('auth', __name__)
+main_blueprint = Blueprint('main', __name__)
+auth_blueprint = Blueprint('auth', __name__)
 
 from . import main, auth, events

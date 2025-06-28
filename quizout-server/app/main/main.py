@@ -1,6 +1,6 @@
 from flask import render_template
-from . import main
-# from .. import db
+from . import main_blueprint as main
+from .. import db
 
 @main.route('/')
 def index():

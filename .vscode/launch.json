@@ -34,8 +34,7 @@
             },
             "args": [
                 "run",
-                "--no-debugger",
-                "--no-reload"
+                "--debug"
             ],
             "jinja": true,
             "autoStartBrowser": false

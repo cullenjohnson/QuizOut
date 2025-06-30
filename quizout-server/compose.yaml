@@ -2,6 +2,7 @@ services:
   quizoutserver:
     environment:
       - SECRET_LOCATION=/run/secrets/
+      - DEBUG=True
     build: .
     ports:
       - "8000:8000"

@@ -16,4 +16,4 @@ COPY . .
 
 RUN chmod a+x docker-run.sh
 
-CMD ["sh", "docker-run.sh"]
+ENTRYPOINT ["./docker-run.sh"]

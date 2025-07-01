@@ -10,7 +10,6 @@ import os
 # init SQLAlchemy
 db = SQLAlchemy()
 migrate = Migrate()
-
 socketio = SocketIO()
 
 load_dotenv()

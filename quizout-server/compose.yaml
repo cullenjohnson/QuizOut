@@ -4,12 +4,22 @@ services:
       - SECRET_LOCATION=/run/secrets/
       - DEBUG=True
     build: .
-    ports:
-      - "8000:8000"
+    expose:
+      - 8000
     secrets:
       - api_key
       - api_secret
       - db_pass
+  web:
+    image: nginx
+    volumes:
+      - ./nginx/proxy_params:/etc/nginx/proxy_params
+      - ./nginx/templates:/etc/nginx/templates
+      - ./static:/var/www/static
+    ports:
+      - "8080:80"
+    environment:
+      - NGINX_PORT=80
 secrets:
   api_key:
     file: ~/.quizoutserver/secrets/api_key

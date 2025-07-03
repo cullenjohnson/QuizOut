@@ -4,7 +4,12 @@
 			"path": "."
 		}
 	],
-	"settings": {},
+	"settings": {
+		"files.exclude": {
+			"**/*.pyc": {"when": "$(basename).py"},
+			"**/__pycache__": true
+		}
+	},
 	"extensions": {
 		"recommendations": [
 			"teticio.python-envy"

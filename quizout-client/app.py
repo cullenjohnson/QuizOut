@@ -5,8 +5,9 @@ import logging
 import logging.handlers
 from PySide6.QtWidgets import QApplication
 
-from utils.KeyPressHandler import KeyPressHandler
-from gui.MainWindow import MainWindow
+from utils import KeyPressHandler
+from gui import MainWindow
+from quizSession import QuizSessionConfig
 
 default_config = {
         'server': {
@@ -21,6 +22,10 @@ default_config = {
             'console_handler': 'True',
             'file_handler': 'True',
             'log_backup_count': '7'
+        },
+        "team_buzzer_keys": {
+            "team1": "1,2,3",
+            "team2": "4,5,6"
         }
 }
 
@@ -76,8 +81,8 @@ def get_config():
 
 if __name__ == "__main__":
     config = setup_app()
-    keyPressHandler = KeyPressHandler()
     app = QApplication(sys.argv)
+    keyPressHandler = KeyPressHandler(QuizSessionConfig(config["team_buzzer_keys"]))
     app.installEventFilter(keyPressHandler)
     window = MainWindow(config)
     window.show()

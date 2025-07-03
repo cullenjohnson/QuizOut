@@ -1,22 +1,22 @@
 import logging
 from socketio import AsyncClient
 
+from . import ServerConfig
+
 logger = logging.getLogger(__name__)
 
 class SocketClient:
     callbacks = None
 
-    def __init__(self, config, on_message=None, on_connect=None, on_disconnect=None):
-        url = config.get('url', 'http://localhost:5000')
+    def __init__(self, config:ServerConfig, on_message=None, on_connect=None, on_disconnect=None):
+        self.url = config.url
 
         self.sio = AsyncClient(handle_sigint=True)
-        self.sio.connection_url = url
-        self.sio.reconnection = config.getboolean('reconnection', True)
-        self.sio.reconnection_attempts = config.getint('reconnection_attempts', 5)
-        self.sio.reconnection_delay = config.getint('reconnection_delay', 1)
-        self.sio.reconnection_delay_max = config.getint('reconnection_delay_max', 5)
-
-        self.url = url
+        self.sio.connection_url = self.url
+        self.sio.reconnection = config.reconnection
+        self.sio.reconnection_attempts = config.reconnection_attempts
+        self.sio.reconnection_delay = config.reconnection_delay
+        self.sio.reconnection_delay_max = config.reconnection_delay_max
 
         self.on_message = on_message if on_message else lambda data: logger.info(f"Message received: {data}")
         self.on_connect = on_connect if on_connect else lambda: logger.info("Connected to server")

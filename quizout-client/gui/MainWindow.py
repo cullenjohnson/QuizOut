@@ -4,6 +4,7 @@ import logging
 from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QMessageBox
 
 from socketClient.SocketClient import SocketClient
+from socketClient.ServerConfig import ServerConfig
 from utils.SocketClientCommunicator import SocketClientCommunicator
 
 logger = logging.getLogger(__name__)
@@ -19,10 +20,10 @@ class MainWindow(QMainWindow):
         self.socketClientComm.clientError.connect(self.on_client_error)
 
         self.socket_client = SocketClient(
-            config=config['server'],
-            on_connect=self.socketClientComm.connected.emit,
-            on_disconnect=self.socketClientComm.disconnected.emit,
-            on_message=self.socketClientComm.messageReceived.emit
+            config = ServerConfig(config['server']),
+            on_connect = self.socketClientComm.connected.emit,
+            on_disconnect = self.socketClientComm.disconnected.emit,
+            on_message = self.socketClientComm.messageReceived.emit
         )
 
         self.loop = asyncio.new_event_loop()

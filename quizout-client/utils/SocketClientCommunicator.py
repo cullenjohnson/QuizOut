@@ -4,4 +4,5 @@ class SocketClientCommunicator(QObject):
     connected = Signal()
     disconnected = Signal()
     messageReceived = Signal(str)
+    resetBuzzers = Signal()
     clientError = Signal(Exception)

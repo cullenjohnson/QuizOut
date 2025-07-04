@@ -1,6 +1,8 @@
 import logging
 from PySide6.QtCore import QObject, QEvent
 from PySide6.QtGui import QKeyEvent, Qt
+from collections.abc import Callable
+
 from quizSession import QuizSessionConfig
 
 logger = logging.getLogger(__name__)
@@ -9,12 +11,25 @@ class KeyPressHandler(QObject):
 
     def __init__(self, quizSessionConfig:QuizSessionConfig):
         self.quizSessionConfig = quizSessionConfig
+        self.keyCallbacks = []
+        self.lastKeyPress = (None, None, None)
 
         super().__init__()
 
+    def connectCallback(self, callback:Callable):
+        self.keyCallbacks.append(callback)
     
     def eventFilter(self, qobj:QObject, event:QEvent):
-        if event.type() is QEvent.Type.KeyPress and event.text() in self.quizSessionConfig.buzzerTeams.keys():
-            logger.info("KeyPress!")
+        if event.type() is QEvent.Type.KeyPress \
+                and event.text() in self.quizSessionConfig.buzzerTeams.keys():
+            keyPressInfo = (self.quizSessionConfig.buzzerTeams[event.text()], event.text(), event.timestamp())
+
+            if keyPressInfo != self.lastKeyPress:
+                logger.debug(f"Handling {keyPressInfo}...")
+                self.lastKeyPress = keyPressInfo
+                for callback in self.keyCallbacks:
+                    callback(keyPressInfo)
+            else:
+                logger.debug(f"Already handled {keyPressInfo}. Skipping event.")
             return super(KeyPressHandler, self).eventFilter(qobj, event)
         return False

@@ -86,4 +86,6 @@ if __name__ == "__main__":
     app.installEventFilter(keyPressHandler)
     window = MainWindow(config)
     window.show()
+    keyPressHandler.connectCallback(window.on_buzzer_key_press)
+    window.raise_()
     sys.exit(app.exec())

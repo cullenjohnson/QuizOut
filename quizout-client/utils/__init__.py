@@ -1,2 +1,3 @@
 from .KeyPressHandler import KeyPressHandler
 from .SocketClientCommunicator import SocketClientCommunicator
+from .TieBreaker import TieBreaker

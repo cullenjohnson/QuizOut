@@ -5,7 +5,9 @@ from PySide6.QtWidgets import QMainWindow, QPushButton, QVBoxLayout, QWidget, QM
 
 from socketClient.SocketClient import SocketClient
 from socketClient.ServerConfig import ServerConfig
+from quizSession.QuizSessionConfig import QuizSessionConfig
 from utils.SocketClientCommunicator import SocketClientCommunicator
+from utils.TieBreaker import TieBreaker
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +15,7 @@ class MainWindow(QMainWindow):
     def __init__(self, config):
         super().__init__()
         self.connecting = False
+        self.listening = False
 
         self.socketClientComm = SocketClientCommunicator()
         self.socketClientComm.connected.connect(self.on_connected)
@@ -25,8 +28,13 @@ class MainWindow(QMainWindow):
             config = ServerConfig(config['server']),
             on_connect = self.socketClientComm.connected.emit,
             on_disconnect = self.socketClientComm.disconnected.emit,
-            on_message = self.socketClientComm.messageReceived.emit
+            on_message = self.socketClientComm.messageReceived.emit,
+            on_reset_buzzers = self.socketClientComm.resetBuzzers.emit
         )
+
+        self.quizSessionConfig = QuizSessionConfig(config["team_buzzer_keys"])
+        self.tieBreaker = TieBreaker(self.quizSessionConfig)
+        self.tieBreaker.playerChosen.connect(self.on_player_chosen)
 
         self.loop = asyncio.new_event_loop()
         self.new_client_thread()
@@ -96,7 +104,11 @@ class MainWindow(QMainWindow):
     def on_activate_buzzers(self):
         logger.info("Listening to buzzers!")
         self.listening = True
-        # TODO
+
+    def on_player_chosen(self, keyPressInfo):
+        self.listening = False
+        (team, key, timestamp) = keyPressInfo
+        logger.info(f"Player chosen {keyPressInfo}")
 
 
     # GUI Event handlers
@@ -138,5 +150,5 @@ class MainWindow(QMainWindow):
 
     # Other methods
     def on_buzzer_key_press(self, keyPressInfo):
-        (team, key, timestamp) = keyPressInfo
-        logger.info(f"Buzzed {team}, {key}, {timestamp}")
+        if self.listening:
+            self.tieBreaker.activate(keyPressInfo)

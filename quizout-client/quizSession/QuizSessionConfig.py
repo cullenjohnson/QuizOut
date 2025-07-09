@@ -3,8 +3,10 @@ from configparser import ConfigParser
 class QuizSessionConfig:
     def __init__(self, config:ConfigParser):
         self.buzzerTeams = dict[str,str]()
+        self.teams = []
 
         for team in config.keys():
+            self.teams.append(team)
             keyListStr = config.get(team)
             keyList = keyListStr.split(',')
             for key in keyList:

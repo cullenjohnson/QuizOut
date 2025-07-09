@@ -4,6 +4,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from ..models import User
 from . import auth_blueprint as auth
 from .. import db
+from ..sharedLogger import logger
 
 @auth.route('/login')
 def login():
@@ -52,7 +53,8 @@ def signup_post():
     db.session.add(new_user)
     db.session.commit()
 
-    return redirect(url_for('auth.login'))
+    login_user(new_user, remember=False)
+    return redirect(url_for('main.profile'))
 
 @auth.route('/logout')
 @login_required

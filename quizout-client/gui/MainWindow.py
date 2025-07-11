@@ -101,8 +101,9 @@ class MainWindow(QMainWindow):
     def on_message(self, msg):
         logger.info(f"Message received: {msg}")
 
-    def on_activate_buzzers(self):
-        logger.info("Listening to buzzers!")
+    def on_activate_buzzers(self, data:dict):
+        logger.info(f"Listening to buzzers! {data}")
+        self.inactiveTeams = data.get("inactive_teams", [])
         self.listening = True
 
     def on_player_chosen(self, keyPressInfo):
@@ -151,4 +152,4 @@ class MainWindow(QMainWindow):
     # Other methods
     def on_buzzer_key_press(self, keyPressInfo):
         if self.listening:
-            self.tieBreaker.activate(keyPressInfo)
+            self.tieBreaker.activate(keyPressInfo, self.inactiveTeams)

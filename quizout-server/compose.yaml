@@ -15,7 +15,7 @@ services:
     volumes:
       - ./nginx/proxy_params:/etc/nginx/proxy_params
       - ./nginx/templates:/etc/nginx/templates
-      - ./static:/var/www/static
+      - ./app/static:/var/www/static
     ports:
       - "8080:80"
     environment:

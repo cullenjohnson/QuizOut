@@ -1,3 +1,4 @@
+import json
 from flask_socketio import emit, join_room, leave_room
 from flask import request
 from .. import socketio
@@ -19,6 +20,6 @@ def message(data = None):
 
 @socketio.on('resetBuzzers')
 @authenticated_only
-def resetBuzzers():
-    logger.debug(f'Client [sid {request.sid}] reset the buzzers.')
-    socketio.emit('resetBuzzers')
+def resetBuzzers(dataJson):
+    logger.debug(f'Client [sid {request.sid}] reset the buzzers. {dataJson}')
+    socketio.emit('resetBuzzers', dataJson)

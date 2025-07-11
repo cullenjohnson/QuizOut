@@ -22,7 +22,12 @@ class TieBreaker(QObject):
 
         super().__init__()
 
-    def activate(self, keyPressInfo):
+    def activate(self, keyPressInfo, inactiveTeams:list = []):
+        # filter out buzzes from inactive teams
+        if keyPressInfo[0] in inactiveTeams:
+            logger.info(f"Keypress ignored because {keyPressInfo[0]} is one of the inactive teams. ({inactiveTeams})")
+            return
+
         if not self.timer.isActive():
             self.timer.setInterval(500)
             self.timer.start()

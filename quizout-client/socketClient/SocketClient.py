@@ -1,4 +1,5 @@
 import logging
+import json
 from socketio import AsyncClient
 
 from . import ServerConfig
@@ -46,9 +47,10 @@ class SocketClient:
             self.on_message(message)
 
         @self.sio.on('resetBuzzers')
-        async def resetBuzzers():
-            logger.info(f"{self.url} reset the buzzers")
-            self.on_reset_buzzers()
+        async def resetBuzzers(jsonData):
+            data = json.loads(jsonData)
+            logger.info(f"{self.url} reset the buzzers. {data}")
+            self.on_reset_buzzers(data)
         # @self.sio.on('*')
         # async def any_event(event, sid, data=None):
         #     logger.info(f"Event: {event}, SID: {sid}, Data: {data}")

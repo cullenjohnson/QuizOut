@@ -10,6 +10,8 @@ services:
       - api_key
       - api_secret
       - db_pass
+    volumes:
+      - quizout-data:/app/db.sqlite
   web:
     image: nginx
     volumes:
@@ -27,3 +29,5 @@ secrets:
     file: ~/.quizoutserver/secrets/api_secret
   db_pass:
     file: ~/.quizoutserver/secrets/db_pass
+volumes:
+  quizout-data:

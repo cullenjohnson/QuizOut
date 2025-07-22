@@ -32,7 +32,7 @@ def create_app():
     with open(api_secret_path, "r") as f:
         app.config['SECRET_KEY'] = f.read()
 
-    db_path = os.getenv("SQLITE_PATH", "/data/db.sqlite")
+    db_path = os.path.expanduser(os.getenv("SQLITE_PATH", "/data/db.sqlite"))
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 
     db.init_app(app)

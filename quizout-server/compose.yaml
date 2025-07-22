@@ -11,7 +11,7 @@ services:
       - api_secret
       - db_pass
     volumes:
-      - quizout-data:/app/db.sqlite
+      - quizout-data:/data
   web:
     image: nginx
     volumes:

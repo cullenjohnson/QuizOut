@@ -3,6 +3,7 @@ services:
     environment:
       - SECRET_LOCATION=/run/secrets/
       - DEBUG=True
+      - SQLITE_PATH=/data/db.sqlite
     build: .
     expose:
       - 8000
@@ -10,6 +11,8 @@ services:
       - api_key
       - api_secret
       - db_pass
+    volumes:
+      - quizout-data:/data
   web:
     image: nginx
     volumes:
@@ -27,3 +30,5 @@ secrets:
     file: ~/.quizoutserver/secrets/api_secret
   db_pass:
     file: ~/.quizoutserver/secrets/db_pass
+volumes:
+  quizout-data:

@@ -22,3 +22,9 @@ These should each contain your desired secret.
 
 ## Docker
 For running the server in production, the Dockerfile is set up to run the server with gunicorn. The quickest way to get it up and running is to use docker compose (i.e., navigate to the server directory and run `$ docker compose up -d`).
+
+## Sound Credits
+Many thanks to the following users on freesound.org for creating the sound effects used in this project:
+ - [rhodesmas](https://freesound.org/people/rhodesmas/)
+ - [metalfortress](https://freesound.org/people/metalfortress/)
+ - [etheraudio](https://freesound.org/people/etheraudio/)

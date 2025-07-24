@@ -1,0 +1,1 @@
+from .sounds import paths as soundEffectPaths

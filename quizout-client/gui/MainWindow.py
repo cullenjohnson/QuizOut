@@ -3,11 +3,13 @@ import threading
 import logging
 from PySide6.QtWidgets import QMainWindow, QPushButton, QVBoxLayout, QWidget, QMessageBox
 
+from .SoundEffectPlayer import SoundEffectPlayer
 from socketClient.SocketClient import SocketClient
 from socketClient.ServerConfig import ServerConfig
 from quizSession.QuizSessionConfig import QuizSessionConfig
 from utils.SocketClientCommunicator import SocketClientCommunicator
 from utils.TieBreaker import TieBreaker
+from utils.Enums import SoundEffect
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +40,7 @@ class MainWindow(QMainWindow):
 
         self.loop = asyncio.new_event_loop()
         self.new_client_thread()
+        self.soundEffectPlayer = SoundEffectPlayer()
 
         self.init_ui()
 
@@ -103,6 +106,7 @@ class MainWindow(QMainWindow):
 
     def on_activate_buzzers(self, data:dict):
         logger.info(f"Listening to buzzers! {data}")
+        self.soundEffectPlayer.playSound(SoundEffect.ActivateSound)
         self.inactiveTeams = data.get("inactive_teams", [])
         self.listening = True
 

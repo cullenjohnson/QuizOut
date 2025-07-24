@@ -1,7 +1,10 @@
 import asyncio
 import threading
 import logging
-from PySide6.QtWidgets import QMainWindow, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QMessageBox, QComboBox
+import os
+from PySide6.QtCore import QObject, Slot, QUrl
+from PySide6.QtWidgets import QApplication, QMessageBox
+from PySide6.QtQml import QQmlApplicationEngine
 
 from .SoundEffectPlayer import SoundEffectPlayer
 from socketClient.SocketClient import SocketClient
@@ -13,7 +16,7 @@ from utils.Enums import SoundEffect
 
 logger = logging.getLogger(__name__)
 
-class MainWindow(QMainWindow):
+class MainWindow(QObject):
     def __init__(self, config):
         super().__init__()
         self.connecting = False
@@ -40,45 +43,26 @@ class MainWindow(QMainWindow):
 
         self.loop = asyncio.new_event_loop()
         self.new_client_thread()
-        self.soundEffectPlayer = SoundEffectPlayer(self)
+        self.engine = QQmlApplicationEngine()
+        self.engine.rootContext().setContextProperty("mainWindow", self)
+        qml_path = os.path.join(os.path.dirname(__file__), "MainWindow.qml")
+        self.engine.load(QUrl.fromLocalFile(qml_path))
+        if not self.engine.rootObjects():
+            raise RuntimeError("Failed to load QML")
+        self.window = self.engine.rootObjects()[0]
+        self.soundEffectPlayer = SoundEffectPlayer(self.window)
 
-        self.init_ui()
+    def show(self):
+        self.window.show()
+
+    def raise_(self):
+        self.window.raise_()
 
     def new_client_thread(self):
         self.connecting = True
         self.client_thread = threading.Thread(target=self.start_loop, daemon=True)
         self.client_thread.start()
 
-    def init_ui(self):
-        self.setWindowTitle('Hello World')
-        self.resize(800, 600)
-        self.connectButton = QPushButton('Connect to Server', self)
-        self.disconnectButton = QPushButton('Disconnect from Server', self)
-        self.disconnectButton.setEnabled(False)
-        
-        self.soundEffectComboBox = QComboBox(self)
-        self.soundEffectComboBox.addItem("Activate", SoundEffect.ActivateSound)
-        self.soundEffectComboBox.addItem("Buzz", SoundEffect.BuzzSound)
-        self.soundEffectComboBox.addItem("Correct", SoundEffect.CorrectSound)
-        self.soundEffectComboBox.addItem("Incorrect", SoundEffect.IncorrectSound)
-        self.soundEffectComboBox.addItem("Timeout", SoundEffect.TimeoutSound)
-        self.testSoundButton = QPushButton('▶️ Test Sound', self)
-
-        testAudioLayout = QHBoxLayout(self, spacing = 2)
-        testAudioLayout.addWidget(self.soundEffectComboBox)
-        testAudioLayout.addWidget(self.testSoundButton)
-
-        centralWidget = QWidget(self)
-        layout = QVBoxLayout(self, spacing=4)
-        centralWidget.setLayout(layout)
-        self.setCentralWidget(centralWidget)
-        layout.addWidget(self.connectButton)
-        layout.addWidget(self.disconnectButton)
-        layout.addLayout(testAudioLayout)
-
-        self.connectButton.clicked.connect(self.on_connect_click)
-        self.disconnectButton.clicked.connect(self.on_disconnect_click)
-        self.testSoundButton.clicked.connect(self.on_test_sound_click)
 
     def start_loop(self):
         asyncio.set_event_loop(self.loop)
@@ -91,7 +75,7 @@ class MainWindow(QMainWindow):
     def on_client_error(self, e):
         self.connecting = False
         logger.error(f"Failed to connect to server: {e}")
-        self.alertDialog = QMessageBox(self)
+        self.alertDialog = QMessageBox(self.window)
         self.alertDialog.setText(f"Failed to connect to server: {e}")
         self.alertDialog.setWindowTitle("Connection Error")
         self.alertDialog.exec()
@@ -100,16 +84,14 @@ class MainWindow(QMainWindow):
         self.connecting = False
         logging.info("Connected to server!")
         self.clientConnected = True
-        self.connectButton.setEnabled(False)
-        self.disconnectButton.setEnabled(True)
-        self.sendButton.setEnabled(True)
+        self.window.setProperty("connectEnabled", False)
+        self.window.setProperty("disconnectEnabled", True)
 
     def on_disconnected(self):
         logging.info("Disconnected from server.")
         self.clientConnected = False
-        self.connectButton.setEnabled(True)
-        self.disconnectButton.setEnabled(False)
-        self.sendButton.setEnabled(False)
+        self.window.setProperty("connectEnabled", True)
+        self.window.setProperty("disconnectEnabled", False)
 
     def on_message(self, msg):
         logger.info(f"Message received: {msg}")
@@ -127,10 +109,6 @@ class MainWindow(QMainWindow):
 
 
     # GUI Event handlers
-    def closeEvent(self, event):
-        asyncio.run_coroutine_threadsafe(self.socket_client.disconnect(), self.loop)
-        event.accept()
-
     # def on_send_click(self):
     #     logger.info('Button clicked, sending message to server...')
     #     try:
@@ -144,11 +122,13 @@ class MainWindow(QMainWindow):
     #         self.alertDialog.setWindowTitle("Connection Error")
     #         self.alertDialog.exec()
 
+    @Slot()
     def on_connect_click(self):
         if not self.connecting:
             logger.info('Connecting to server...')
             self.new_client_thread()
 
+    @Slot()
     def on_disconnect_click(self):
         logger.info('Disconnecting from server...')
         try:
@@ -158,14 +138,22 @@ class MainWindow(QMainWindow):
             )
         except Exception as e:
             logger.error(f"Failed to disconnect from server: {e}")
-            self.alertDialog = QMessageBox(self)
+            self.alertDialog = QMessageBox(self.window)
             self.alertDialog.setText(f"Failed to disconnect from server: {e}")
             self.alertDialog.setWindowTitle("DisconnectionError")
             self.alertDialog.exec()
 
-    def on_test_sound_click(self):
-        effect = self.soundEffectComboBox.currentData()
+    @Slot(int)
+    def on_test_sound_click(self, index):
+        try:
+            effect = SoundEffect(index)
+        except ValueError:
+            effect = SoundEffect.ActivateSound
         self.soundEffectPlayer.playSound(effect)
+
+    @Slot()
+    def on_close(self):
+        asyncio.run_coroutine_threadsafe(self.socket_client.disconnect(), self.loop)
 
     # Other methods
     def on_buzzer_key_press(self, keyPressInfo):

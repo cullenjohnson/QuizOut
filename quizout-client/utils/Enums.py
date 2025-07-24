@@ -5,4 +5,4 @@ class SoundEffect(Enum):
     BuzzSound = 1
     CorrectSound = 2
     IncorrectSound = 3
-    TimeoutSound = 3
+    TimeoutSound = 4

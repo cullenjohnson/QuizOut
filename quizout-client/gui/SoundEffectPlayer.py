@@ -9,11 +9,15 @@ class SoundEffectPlayer:
     soundEffects: Dict[SoundEffect, QSoundEffect] = {}
 
     def __init__(self, parent:QObject):
-        activateEffect = QSoundEffect(parent)
-        activateEffect.setSource(QUrl.fromLocalFile(soundEffectPaths[SoundEffect.ActivateSound]))
-        activateEffect.setVolume(1.0)
+        for effect in SoundEffect:
+            self.soundEffects[effect] = self.initSoundEffect(effect, parent)
 
-        self.soundEffects[SoundEffect.ActivateSound] = activateEffect
+    def initSoundEffect(self, effect:SoundEffect, parent):
+        qEffect = QSoundEffect(parent)
+        qEffect.setSource(QUrl.fromLocalFile(soundEffectPaths[effect]))
+        qEffect.setVolume(1.0)
+
+        return qEffect
 
     def playSound(self, effect:SoundEffect):
         if effect in self.soundEffects:

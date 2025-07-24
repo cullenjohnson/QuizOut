@@ -40,7 +40,7 @@ class MainWindow(QMainWindow):
 
         self.loop = asyncio.new_event_loop()
         self.new_client_thread()
-        self.soundEffectPlayer = SoundEffectPlayer()
+        self.soundEffectPlayer = SoundEffectPlayer(self)
 
         self.init_ui()
 

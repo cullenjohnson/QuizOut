@@ -102,14 +102,12 @@ class MainWindow(QMainWindow):
         self.clientConnected = True
         self.connectButton.setEnabled(False)
         self.disconnectButton.setEnabled(True)
-        self.sendButton.setEnabled(True)
 
     def on_disconnected(self):
         logging.info("Disconnected from server.")
         self.clientConnected = False
         self.connectButton.setEnabled(True)
         self.disconnectButton.setEnabled(False)
-        self.sendButton.setEnabled(False)
 
     def on_message(self, msg):
         logger.info(f"Message received: {msg}")

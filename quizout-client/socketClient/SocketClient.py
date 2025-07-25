@@ -1,6 +1,7 @@
 import logging
 import json
 from socketio import AsyncClient
+from utils.SocketClientCommunicator import SocketClientCommunicator
 
 from . import ServerConfig
 
@@ -9,7 +10,7 @@ logger = logging.getLogger(__name__)
 class SocketClient:
     callbacks = None
 
-    def __init__(self, config:ServerConfig, on_message=None, on_connect=None, on_disconnect=None, on_reset_buzzers=None):
+    def __init__(self, config:ServerConfig, socketClientCommunicator:SocketClientCommunicator):
         self.url = config.url
 
         self.sio = AsyncClient(handle_sigint=True)
@@ -19,10 +20,7 @@ class SocketClient:
         self.sio.reconnection_delay = config.reconnection_delay
         self.sio.reconnection_delay_max = config.reconnection_delay_max
 
-        self.on_message = on_message if on_message else lambda data: logger.info(f"Message received: {data}")
-        self.on_connect = on_connect if on_connect else lambda: logger.info("Connected to server")
-        self.on_disconnect = on_disconnect if on_disconnect else lambda: logger.info("Disconnected from server")
-        self.on_reset_buzzers = on_reset_buzzers if on_reset_buzzers else lambda: logger.info("Reset buzzers")
+        self.socketClientComm = socketClientCommunicator
 
         self.setup_event_handlers()
 
@@ -34,26 +32,39 @@ class SocketClient:
         @self.sio.event
         async def connect():
             logger.info(f"Connected to {self.url} . SID: {self.sio.sid}")
-            self.on_connect()
+            self.socketClientComm.connected.emit()
 
         @self.sio.event
         async def disconnect():
             logger.info('Disconnected from server')
-            self.on_disconnect()
+            self.socketClientComm.disconnected.emit()
 
-        @self.sio.on('response')
-        async def response(message=None):
-            logger.info(f"{self.url} said: {message}")
-            self.on_message(message)
 
         @self.sio.on('resetBuzzers')
         async def resetBuzzers(jsonData):
             data = json.loads(jsonData)
             logger.info(f"{self.url} reset the buzzers. {data}")
-            self.on_reset_buzzers(data)
-        # @self.sio.on('*')
-        # async def any_event(event, sid, data=None):
-        #     logger.info(f"Event: {event}, SID: {sid}, Data: {data}")
+            self.socketClientComm.resetBuzzers.emit(data)
+
+        @self.sio.on('buzzerTimeout')
+        async def buzzerTimeout():
+            logger.info(f"{self.url} says: buzzer timeout")
+            self.socketClientComm.buzzerTimeout.emit()
+
+        @self.sio.on('playerAnswering')
+        async def playerAnswering(playerKey):
+            logger.info(f"{self.url} says: player {playerKey} answering...")
+            self.socketClientComm.playerAnswering.emit(playerKey)
+
+        @self.sio.on('playerCorrect')
+        async def playerCorrect(playerKey):
+            logger.info(f"{self.url} says: player {playerKey} was correct!")
+            self.socketClientComm.playerCorrect.emit(playerKey)
+
+        @self.sio.on('playerIncorrect')
+        async def playerIncorrect(playerKey):
+            logger.info(f"{self.url} says: player {playerKey} was incorrect")
+            self.socketClientComm.playerIncorrect.emit(playerKey)
 
     async def connect(self):
         try:
@@ -72,6 +83,13 @@ class SocketClient:
     async def sendMessage(self, data=None):
         try:
             await self.sio.emit('message', data)
+        except Exception as e:
+            logger.error(f"Failed to send message: {e}")
+            raise
+
+    async def playerBuzzed(self, playerKey:str):
+        try:
+            await self.sio.emit('playerBuzzed', playerKey)
         except Exception as e:
             logger.error(f"Failed to send message: {e}")
             raise

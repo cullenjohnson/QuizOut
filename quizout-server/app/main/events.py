@@ -18,8 +18,31 @@ def message(data = None):
     logger.debug(f'Client [sid {request.sid}] sent message:{data}.')
     socketio.emit('response', f'Server received message: {data}')
 
+@socketio.event
+def playerBuzzed(playerName:str):
+    logger.debug(f'Client [sid {request.sid}] says player buzzed: {playerName}.')
+    socketio.emit('playerAnswering', playerName)
+
 @socketio.on('resetBuzzers')
 @authenticated_only
 def resetBuzzers(dataJson):
     logger.debug(f'Client [sid {request.sid}] reset the buzzers. {dataJson}')
     socketio.emit('resetBuzzers', dataJson)
+
+@socketio.on('buzzerTimeout')
+@authenticated_only
+def buzzerTimeout():
+    logger.debug(f'Client [sid {request.sid}] timed out the buzzers.')
+    socketio.emit('buzzerTimeout')
+
+@socketio.on('playerCorrect')
+@authenticated_only
+def playerCorrect(playerKey):
+    logger.debug(f'Client [sid {request.sid}] said player {playerKey} was corrrect.')
+    socketio.emit('playerCorrect', playerKey)
+
+@socketio.on('playerIncorrect')
+@authenticated_only
+def playerIncorrect(playerKey):
+    logger.debug(f'Client [sid {request.sid}] said player {playerKey} was incorrect.')
+    socketio.emit('playerIncorrect', playerKey)

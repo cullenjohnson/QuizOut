@@ -3,6 +3,9 @@ from PySide6.QtCore import QObject, Signal
 class SocketClientCommunicator(QObject):
     connected = Signal()
     disconnected = Signal()
-    messageReceived = Signal(str)
     resetBuzzers = Signal(dict)
+    buzzerTimeout = Signal()
     clientError = Signal(Exception)
+    playerAnswering = Signal(str)
+    playerCorrect = Signal(str)
+    playerIncorrect = Signal(str)

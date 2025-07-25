@@ -22,16 +22,16 @@ class MainWindow(QMainWindow):
         self.socketClientComm = SocketClientCommunicator()
         self.socketClientComm.connected.connect(self.on_connected)
         self.socketClientComm.disconnected.connect(self.on_disconnected)
-        self.socketClientComm.messageReceived.connect(self.on_message)
         self.socketClientComm.clientError.connect(self.on_client_error)
         self.socketClientComm.resetBuzzers.connect(self.on_activate_buzzers)
+        self.socketClientComm.buzzerTimeout.connect(self.on_buzzer_timeout)
+        self.socketClientComm.playerAnswering.connect(self.on_player_answering)
+        self.socketClientComm.playerCorrect.connect(self.on_player_correct)
+        self.socketClientComm.playerIncorrect.connect(self.on_player_incorrect)
 
         self.socket_client = SocketClient(
             config = ServerConfig(config['server']),
-            on_connect = self.socketClientComm.connected.emit,
-            on_disconnect = self.socketClientComm.disconnected.emit,
-            on_message = self.socketClientComm.messageReceived.emit,
-            on_reset_buzzers = self.socketClientComm.resetBuzzers.emit
+            socketClientCommunicator = self.socketClientComm
         )
 
         self.quizSessionConfig = QuizSessionConfig(config["team_buzzer_keys"])
@@ -109,19 +109,51 @@ class MainWindow(QMainWindow):
         self.connectButton.setEnabled(True)
         self.disconnectButton.setEnabled(False)
 
-    def on_message(self, msg):
-        logger.info(f"Message received: {msg}")
-
     def on_activate_buzzers(self, data:dict):
         logger.info(f"Listening to buzzers! {data}")
         self.soundEffectPlayer.playSound(SoundEffect.ActivateSound)
         self.inactiveTeams = data.get("inactive_teams", [])
         self.listening = True
 
+    def on_buzzer_timeout(self):
+        if self.listening:
+            logger.info("Buzzers timed out")
+            self.listening = False
+            self.soundEffectPlayer.playSound(SoundEffect.TimeoutSound)
+
+    def on_player_answering(self, playerKey:str):
+        logger.info(f"Player answering: {playerKey}")
+        self.soundEffectPlayer.playSound(SoundEffect.BuzzSound)
+
+    def on_player_correct(self, playerKey:str):
+        logger.info(f"Player Correct: {playerKey}")
+        self.soundEffectPlayer.playSound(SoundEffect.CorrectSound)
+
+    def on_player_incorrect(self, playerKey:str):
+        logger.info(f"Player incorrect: {playerKey}")
+        self.soundEffectPlayer.playSound(SoundEffect.IncorrectSound)
+
+        # Reactivate buzzers for other teams
+        self.inactiveTeams.append(self.quizSessionConfig.buzzerTeams[playerKey])
+        if len(self.inactiveTeams) != len(self.quizSessionConfig.teams):
+            self.listening = True
+
+
+    # TieBreaker Signal handlers
     def on_player_chosen(self, keyPressInfo):
         self.listening = False
         (team, key, timestamp) = keyPressInfo
         logger.info(f"Player chosen {keyPressInfo}")
+        try:
+            asyncio.run_coroutine_threadsafe(
+                self.socket_client.playerBuzzed(key),
+                self.loop)
+        except Exception as e:
+            logger.error(f"Failed to connect to server: {e}")
+            self.alertDialog = QMessageBox(self)
+            self.alertDialog.setText(f"Failed to connect to server: {e}")
+            self.alertDialog.setWindowTitle("Connection Error")
+            self.alertDialog.exec()
 
 
     # GUI Event handlers

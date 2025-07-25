@@ -46,7 +46,7 @@ def create_app():
     from .main import main_blueprint
     app.register_blueprint(main_blueprint)
 
-    socketio.init_app(app, async_mode="threading")
+    socketio.init_app(app, async_mode="threading", cors_allowed_origins="*")
 
     logger.info("SocketIO server started")
 

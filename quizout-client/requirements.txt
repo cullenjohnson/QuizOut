@@ -7,6 +7,7 @@ bidict==0.23.1
 frozenlist==1.7.0
 h11==0.16.0
 idna==3.10
+jsonpickle~=4.1.1
 multidict==6.5.0
 propcache==0.3.2
 PySide6~=6.8.0

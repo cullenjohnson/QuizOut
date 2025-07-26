@@ -1,9 +1,12 @@
-import json
+import jsonpickle
+import uuid
 from flask_socketio import emit, join_room, leave_room
 from flask import request
-from .. import socketio
+
+from .. import socketio, db
 from ..sharedLogger import logger
 from ..utils.flask_addons import authenticated_only
+from ..models import BuzzerClient
 
 @socketio.event
 def connect(data = None):
@@ -22,6 +25,33 @@ def message(data = None):
 def playerBuzzed(playerName:str):
     logger.debug(f'Client [sid {request.sid}] says player buzzed: {playerName}.')
     socketio.emit('playerAnswering', playerName)
+
+
+@socketio.event
+def buzzerClientConnected(clientInfoStr):
+    clientInfo = jsonpickle.decode(clientInfoStr, classes=(uuid.UUID))
+    logger.info(f'Client [sid {request.sid}] sent buzzer session info: {str(clientInfo)}')
+
+    buzzerClient = BuzzerClient(
+        uuid = uuid.UUID(clientInfo['uuid']['hex']),
+        ip = clientInfo['ip'],
+        teamBuzzerInfo = clientInfo['teamBuzzerInfo'])
+    
+    db.session.add(buzzerClient)
+    db.session.commit()
+
+    socketio.emit('updateBuzzerClient', jsonpickle.encode(buzzerClient.serialize(), unpicklable=False))
+
+@socketio.on('adminClientConnected')
+@authenticated_only
+def adminClientConnected():
+    logger.debug(f'Admin client [sid {request.sid}] connected')
+    
+    lastBuzzerClient = BuzzerClient.query.order_by(BuzzerClient.id.desc()).first()
+
+    if lastBuzzerClient is not None:
+        socketio.emit('updateBuzzerClient', jsonpickle.encode(lastBuzzerClient.serialize(), unpicklable=False))
+
 
 @socketio.on('resetBuzzers')
 @authenticated_only

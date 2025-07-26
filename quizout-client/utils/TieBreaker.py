@@ -3,7 +3,7 @@ import random
 
 from PySide6.QtCore import QObject, QTimer, Signal
 
-from quizSession.QuizSessionConfig import QuizSessionConfig
+from data import TeamBuzzerInfo
 
 logger = logging.getLogger(__name__)
 
@@ -12,9 +12,9 @@ class TieBreaker(QObject):
 
     playerChosen = Signal(tuple)
 
-    def __init__(self, quizSessionConfig:QuizSessionConfig):
-        self.quizSessionConfig = quizSessionConfig
-        self.allTeams = quizSessionConfig.teams
+    def __init__(self, teamBuzzerInfo:TeamBuzzerInfo):
+        self.teamBuzzerInfo = teamBuzzerInfo
+        self.allTeams = teamBuzzerInfo.teams
         self.chosenTeams = []
         self.timer = QTimer(singleShot=True)
         self.timer.timeout.connect(self.onTimeout)

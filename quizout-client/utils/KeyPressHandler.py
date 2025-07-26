@@ -3,14 +3,14 @@ from PySide6.QtCore import QObject, QEvent
 from PySide6.QtGui import QKeyEvent, Qt
 from collections.abc import Callable
 
-from quizSession import QuizSessionConfig
+from data import TeamBuzzerInfo
 
 logger = logging.getLogger(__name__)
 
 class KeyPressHandler(QObject):
 
-    def __init__(self, quizSessionConfig:QuizSessionConfig):
-        self.quizSessionConfig = quizSessionConfig
+    def __init__(self, teamBuzzerInfo:TeamBuzzerInfo):
+        self.teamBuzzerInfo = teamBuzzerInfo
         self.keyCallbacks = []
         self.lastKeyPress = (None, None, None)
 
@@ -21,8 +21,8 @@ class KeyPressHandler(QObject):
     
     def eventFilter(self, qobj:QObject, event:QEvent):
         if event.type() is QEvent.Type.KeyPress \
-                and event.text() in self.quizSessionConfig.buzzerTeams.keys():
-            keyPressInfo = (self.quizSessionConfig.buzzerTeams[event.text()], event.text(), event.timestamp())
+                and event.text() in self.teamBuzzerInfo.buzzerTeams.keys():
+            keyPressInfo = (self.teamBuzzerInfo.buzzerTeams[event.text()], event.text(), event.timestamp())
 
             if keyPressInfo != self.lastKeyPress:
                 logger.debug(f"Handling {keyPressInfo}...")

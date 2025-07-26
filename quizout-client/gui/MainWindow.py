@@ -6,7 +6,7 @@ from PySide6.QtWidgets import QMainWindow, QPushButton, QVBoxLayout, QHBoxLayout
 from .SoundEffectPlayer import SoundEffectPlayer
 from socketClient.SocketClient import SocketClient
 from socketClient.ServerConfig import ServerConfig
-from quizSession.QuizSessionConfig import QuizSessionConfig
+from data import ClientInfo, TeamBuzzerInfo
 from utils.SocketClientCommunicator import SocketClientCommunicator
 from utils.TieBreaker import TieBreaker
 from utils.Enums import SoundEffect
@@ -29,13 +29,16 @@ class MainWindow(QMainWindow):
         self.socketClientComm.playerCorrect.connect(self.on_player_correct)
         self.socketClientComm.playerIncorrect.connect(self.on_player_incorrect)
 
+        self.teamBuzzerInfo = TeamBuzzerInfo(config["team_buzzer_keys"])
+        self.clientInfo = ClientInfo(self.teamBuzzerInfo)
+
         self.socket_client = SocketClient(
             config = ServerConfig(config['server']),
+            clientInfo = self.clientInfo,
             socketClientCommunicator = self.socketClientComm
         )
 
-        self.quizSessionConfig = QuizSessionConfig(config["team_buzzer_keys"])
-        self.tieBreaker = TieBreaker(self.quizSessionConfig)
+        self.tieBreaker = TieBreaker(self.teamBuzzerInfo)
         self.tieBreaker.playerChosen.connect(self.on_player_chosen)
 
         self.loop = asyncio.new_event_loop()
@@ -134,8 +137,8 @@ class MainWindow(QMainWindow):
         self.soundEffectPlayer.playSound(SoundEffect.IncorrectSound)
 
         # Reactivate buzzers for other teams
-        self.inactiveTeams.append(self.quizSessionConfig.buzzerTeams[playerKey])
-        if len(self.inactiveTeams) != len(self.quizSessionConfig.teams):
+        self.inactiveTeams.append(self.teamBuzzerInfo.buzzerTeams[playerKey])
+        if len(self.inactiveTeams) != len(self.teamBuzzerInfo.teams):
             self.listening = True
 
 

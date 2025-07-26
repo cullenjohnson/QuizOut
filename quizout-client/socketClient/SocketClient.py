@@ -1,17 +1,24 @@
 import logging
 import json
+import jsonpickle
 from socketio import AsyncClient
+
 from utils.SocketClientCommunicator import SocketClientCommunicator
+from data import ClientInfo
 
 from . import ServerConfig
 
 logger = logging.getLogger(__name__)
 
 class SocketClient:
-    callbacks = None
+    url:str
+    clientInfo:ClientInfo
+    socketClientComm:SocketClientCommunicator
+    sio:AsyncClient
 
-    def __init__(self, config:ServerConfig, socketClientCommunicator:SocketClientCommunicator):
+    def __init__(self, config:ServerConfig, clientInfo:ClientInfo, socketClientCommunicator:SocketClientCommunicator):
         self.url = config.url
+        self.clientInfo = clientInfo
 
         self.sio = AsyncClient(handle_sigint=True)
         self.sio.connection_url = self.url
@@ -32,7 +39,16 @@ class SocketClient:
         @self.sio.event
         async def connect():
             logger.info(f"Connected to {self.url} . SID: {self.sio.sid}")
+
+            # Tell UI that the client has connected.
             self.socketClientComm.connected.emit()
+
+            # Send buzzer client info to the server.
+            try:
+                await self.sio.emit('buzzerClientConnected', jsonpickle.encode(self.clientInfo, unpicklable = False))
+            except Exception as e:
+                logger.error(f"Failed to send message: {e}")
+                raise
 
         @self.sio.event
         async def disconnect():

@@ -1,6 +1,10 @@
 from configparser import ConfigParser
+from typing import Dict,List
 
-class QuizSessionConfig:
+class TeamBuzzerInfo:
+    buzzerTeams:Dict[str,str]
+    teams:List[str]
+
     def __init__(self, config:ConfigParser):
         self.buzzerTeams = dict[str,str]()
         self.teams = []

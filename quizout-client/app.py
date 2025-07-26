@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QApplication
 
 from utils import KeyPressHandler
 from gui import MainWindow
-from quizSession import QuizSessionConfig
+from data import TeamBuzzerInfo
 
 default_config = {
         'server': {
@@ -82,7 +82,7 @@ def get_config():
 if __name__ == "__main__":
     config = setup_app()
     app = QApplication(sys.argv)
-    keyPressHandler = KeyPressHandler(QuizSessionConfig(config["team_buzzer_keys"]))
+    keyPressHandler = KeyPressHandler(TeamBuzzerInfo(config["team_buzzer_keys"]))
     app.installEventFilter(keyPressHandler)
     window = MainWindow(config)
     window.show()

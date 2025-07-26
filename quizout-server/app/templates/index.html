@@ -36,11 +36,13 @@
 
 <script src="{{ url_for('static', filename='socket.io.3.1.3.js') }}"></script>
 <script type="text/javascript">
-    var socket = io.connect('http://' + document.domain + ':' + location.port);
+    const socket = io.connect('http://' + document.domain + ':' + location.port);
 
+    let buzzerClientInfo = null;
     let lastPlayerKey = null;
     let buzzerTimer = null;
     let buzzerTimerMS = 0;
+    let inactiveTeams = [];
 
     const playerBuzzedModal = new bootstrap.Modal(document.getElementById('playerBuzzedModal'));
     const playerNameSpan = document.getElementById('playerNameSpan');
@@ -49,12 +51,18 @@
     const buzzerTimerP = document.getElementById('buzzerTimerP');
     
     socket.on('connect', function () {
+        socket.emit('adminClientConnected');
         console.log('Connected to the server');
         uiReady();
     });
 
     socket.on('response', function (data) {
         console.log('Server says: ' + data);
+    });
+
+    socket.on('updateBuzzerClient', function(data) {
+        buzzerClientInfo = JSON.parse(data);
+        console.log("updateBuzzerClient", buzzerClientInfo);
     });
 
     socket.on('playerAnswering', function(playerKey) {
@@ -71,8 +79,9 @@
         statusP.innerHTML = '💤 Buzzers Inactive';
     }
 
-    function resetBuzzers(inactiveTeams) {
-        const data = JSON.stringify({inactive_teams: inactiveTeams});
+    function resetBuzzers(inactiveTeamsA) {
+        const data = JSON.stringify({inactive_teams: inactiveTeamsA});
+        inactiveTeams = inactiveTeamsA;
         socket.emit('resetBuzzers', data);
         startBuzzerTimer();
         activateButton.setAttribute("disabled", "");
@@ -86,7 +95,13 @@
     function playerIncorrect() {
         socket.emit('playerIncorrect', lastPlayerKey);
         uiReady();
-        startBuzzerTimer();
+        playerTeam = buzzerClientInfo['teamBuzzerInfo']['buzzerTeams'][lastPlayerKey];
+
+        inactiveTeams.push(playerTeam);
+
+        if (inactiveTeams.length < buzzerClientInfo['teamBuzzerInfo']['teams'].length) {
+            startBuzzerTimer();
+        }
     }
 
     function buzzerTimeout() {

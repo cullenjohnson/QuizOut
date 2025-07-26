@@ -4,8 +4,9 @@ from flask_socketio import SocketIO
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from dotenv import load_dotenv
-from .sharedLogger import logger
 import os
+
+from .sharedLogger import logger
 
 # init SQLAlchemy
 db = SQLAlchemy()

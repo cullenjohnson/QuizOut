@@ -94,13 +94,19 @@
 
     function playerIncorrect() {
         socket.emit('playerIncorrect', lastPlayerKey);
-        uiReady();
+        playerBuzzedModal.hide();
         playerTeam = buzzerClientInfo['teamBuzzerInfo']['buzzerTeams'][lastPlayerKey];
 
         inactiveTeams.push(playerTeam);
 
         if (inactiveTeams.length < buzzerClientInfo['teamBuzzerInfo']['teams'].length) {
             startBuzzerTimer();
+        } else {
+            statusP.innerHTML = `
+                <span class="text-danger-emphasis">❌ Each team gave an incorrect response to the last question.</span>
+                <br>
+                💤 Buzzers Inactive`;
+            activateButton.removeAttribute("disabled");
         }
     }
 

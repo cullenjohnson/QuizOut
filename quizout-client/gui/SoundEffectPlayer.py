@@ -11,8 +11,8 @@ class SoundEffectPlayer:
         SoundEffect.ActivateSound: 1.0,
         SoundEffect.BuzzSound: 0.75,
         SoundEffect.CorrectSound: 0.75,
-        SoundEffect.IncorrectSound: 0.75,
-        SoundEffect.TimeoutSound: 0.75,
+        SoundEffect.IncorrectSound: 0.9,
+        SoundEffect.TimeoutSound: 0.6,
     }
 
     def __init__(self, parent:QObject):

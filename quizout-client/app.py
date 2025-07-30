@@ -26,6 +26,9 @@ default_config = {
         "team_buzzer_keys": {
             "team1": "1,2,3",
             "team2": "4,5,6"
+        },
+        'buzzerSystem': {
+            'tieThresholdMS': 2
         }
 }
 

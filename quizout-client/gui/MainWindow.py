@@ -2,6 +2,7 @@ import asyncio
 import threading
 import logging
 from PySide6.QtWidgets import QMainWindow, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QMessageBox, QComboBox
+from PySide6.QtCore import Qt, QTimer
 
 from .SoundEffectPlayer import SoundEffectPlayer
 from socketClient.SocketClient import SocketClient
@@ -38,7 +39,7 @@ class MainWindow(QMainWindow):
             socketClientCommunicator = self.socketClientComm
         )
 
-        self.tieBreaker = TieBreaker(self.teamBuzzerInfo)
+        self.tieBreaker = TieBreaker(self.teamBuzzerInfo, config["buzzerSystem"].getint('tieThresholdMS', fallback = 2))
         self.tieBreaker.playerChosen.connect(self.on_player_chosen)
 
         self.loop = asyncio.new_event_loop()
@@ -53,7 +54,9 @@ class MainWindow(QMainWindow):
         self.client_thread.start()
 
     def init_ui(self):
-        self.setWindowTitle('Hello World')
+        self.setWindowTitle('Quizout Buzzer Client')
+        self.setWindowFlag(Qt.WindowStaysOnTopHint, True)
+
         self.resize(800, 600)
         self.connectButton = QPushButton('Connect to Server', self)
         self.disconnectButton = QPushButton('Disconnect from Server', self)
@@ -90,6 +93,12 @@ class MainWindow(QMainWindow):
         except Exception as e:
                 self.socketClientComm.clientError.emit(e)
 
+    # Raise and focus
+    def focus_window(self):
+        self.raise_()
+        self.activateWindow()
+        self.show()
+
     # SocketClient Signal handlers
     def on_client_error(self, e):
         self.connecting = False
@@ -113,6 +122,7 @@ class MainWindow(QMainWindow):
         self.disconnectButton.setEnabled(False)
 
     def on_activate_buzzers(self, data:dict):
+        self.focus_window()
         logger.info(f"Listening to buzzers! {data}")
         self.soundEffectPlayer.playSound(SoundEffect.ActivateSound)
         self.inactiveTeams = data.get("inactive_teams", [])
@@ -139,8 +149,11 @@ class MainWindow(QMainWindow):
         # Reactivate buzzers for other teams
         self.inactiveTeams.append(self.teamBuzzerInfo.buzzerTeams[playerKey])
         if len(self.inactiveTeams) != len(self.teamBuzzerInfo.teams):
-            self.listening = True
-
+            logger.info("Reactivating buzzers for the other teams in 0.1sec...")
+            timer = QTimer(singleShot=True)
+            timer.timeout.connect(lambda: self.on_activate_buzzers({'inactive_teams': self.inactiveTeams}))
+            timer.setInterval(120)
+            timer.start()
 
     # TieBreaker Signal handlers
     def on_player_chosen(self, keyPressInfo):

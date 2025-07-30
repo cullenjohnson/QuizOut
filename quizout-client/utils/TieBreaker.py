@@ -7,18 +7,21 @@ from data import TeamBuzzerInfo
 
 logger = logging.getLogger(__name__)
 
-# TODO add logic for second place?
 class TieBreaker(QObject):
 
     playerChosen = Signal(tuple)
+    # Some keyboard buffers treat simultaneous presses as 1ms apart, but always favor the same key. This variable will allow the logic to
+    # treat keypresses that are milliseconds apart as simultaneous to try to ensure fairness.
+    tieThresholdMS:int = 2
 
-    def __init__(self, teamBuzzerInfo:TeamBuzzerInfo):
+    def __init__(self, teamBuzzerInfo:TeamBuzzerInfo, tieThresholdMS:int):
         self.teamBuzzerInfo = teamBuzzerInfo
         self.allTeams = teamBuzzerInfo.teams
         self.chosenTeams = []
         self.timer = QTimer(singleShot=True)
         self.timer.timeout.connect(self.onTimeout)
         self.keypress = None
+        self.tieThresholdMS = tieThresholdMS
 
         super().__init__()
 
@@ -32,6 +35,7 @@ class TieBreaker(QObject):
             self.timer.setInterval(500)
             self.timer.start()
             self.keypress = None
+            self.randomlyChosenTeam = None
         
         if self.keypress is None:
             self.keypress = keyPressInfo
@@ -42,12 +46,15 @@ class TieBreaker(QObject):
         (team1, key1, timestamp1) = keypress1
         (team2, key2, timestamp2) = keypress2
 
-        # Pick fastest buzz
-        if timestamp1 < timestamp2:
-            return keypress1
+        timeDifference = timestamp1 - timestamp2
 
-        elif timestamp2 < timestamp1:
-            return keypress2
+        # Pick fastest buzz
+        if abs(timeDifference) > self.tieThresholdMS:
+            if timestamp1 < timestamp2:
+                return keypress1
+
+            elif timestamp2 < timestamp1:
+                return keypress2
 
         else:
             # If there's a tie between players on the same team, pick random
@@ -59,6 +66,14 @@ class TieBreaker(QObject):
                 # Reset the list of chosen teams if every team has been chosen randomly
                 if len(self.chosenTeams) == len(self.allTeams):
                     self.chosenTeams = []
+
+                # If one of the teams was chosen as the result of a previous tie-break within the same tiebreaker timer session, stay with that choice.
+                if team1 == self.randomlyChosenTeam:
+                    logger.info(f"TIE! {team1} chosen because they were already randomly chosen in the current tiebreaker session.")
+                    return keypress1
+                elif team2 == self.randomlyChosenTeam:
+                    logger.info(f"TIE! {team2} chosen because they were already randomly chosen in the current tiebreaker session.")
+                    return keypress2
 
                 winningKeypress = None
 
@@ -72,7 +87,7 @@ class TieBreaker(QObject):
                 # Neither team has been chosen before
                 if index1 == index2:
                     winningKeypress = random.choice([keypress1, keypress2])
-                    logger.info("TIE! Player chosen at random.")
+                    logger.info("TIE! {winnindKeypress[0]} chosen by coin toss.")
                 # team for keypress1 was chosen least recently
                 elif index1 < index2:
                     winningKeypress = keypress1
@@ -83,6 +98,7 @@ class TieBreaker(QObject):
                     logger.info(f"TIE! {team2} chosen because {team1} was randomly chosen more recently.")
                 
                 self.chosenTeams.append(winningKeypress[0])
+                self.randomlyChosenTeam = winningKeypress[0]
                 return winningKeypress
     
     def onTimeout(self):

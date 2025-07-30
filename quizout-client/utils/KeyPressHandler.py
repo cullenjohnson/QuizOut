@@ -29,7 +29,5 @@ class KeyPressHandler(QObject):
                 self.lastKeyPress = keyPressInfo
                 for callback in self.keyCallbacks:
                     callback(keyPressInfo)
-            else:
-                logger.debug(f"Already handled {keyPressInfo}. Skipping event.")
             return super(KeyPressHandler, self).eventFilter(qobj, event)
         return False

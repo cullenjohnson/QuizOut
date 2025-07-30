@@ -150,10 +150,10 @@ class MainWindow(QMainWindow):
         self.inactiveTeams.append(self.teamBuzzerInfo.buzzerTeams[playerKey])
         if len(self.inactiveTeams) != len(self.teamBuzzerInfo.teams):
             logger.info("Reactivating buzzers for the other teams in 0.1sec...")
-            timer = QTimer(singleShot=True)
-            timer.timeout.connect(lambda: self.on_activate_buzzers({'inactive_teams': self.inactiveTeams}))
-            timer.setInterval(120)
-            timer.start()
+            self.reactivateTimer = QTimer(singleShot=True)
+            self.reactivateTimer.timeout.connect(lambda: self.on_activate_buzzers({'inactive_teams': self.inactiveTeams}))
+            self.reactivateTimer.setInterval(1000)
+            self.reactivateTimer.start()
 
     # TieBreaker Signal handlers
     def on_player_chosen(self, keyPressInfo):

@@ -7,6 +7,13 @@ from utils.Enums import SoundEffect
 
 class SoundEffectPlayer:
     soundEffects: Dict[SoundEffect, QSoundEffect] = {}
+    SOUND_EFFECT_VOLUMES: Dict[SoundEffect, float] = {
+        SoundEffect.ActivateSound: 1.0,
+        SoundEffect.BuzzSound: 0.75,
+        SoundEffect.CorrectSound: 0.75,
+        SoundEffect.IncorrectSound: 0.75,
+        SoundEffect.TimeoutSound: 0.75,
+    }
 
     def __init__(self, parent:QObject):
         for effect in SoundEffect:
@@ -15,7 +22,7 @@ class SoundEffectPlayer:
     def initSoundEffect(self, effect:SoundEffect, parent):
         qEffect = QSoundEffect(parent)
         qEffect.setSource(QUrl.fromLocalFile(soundEffectPaths[effect]))
-        qEffect.setVolume(1.0)
+        qEffect.setVolume(self.SOUND_EFFECT_VOLUMES[effect])
 
         return qEffect
 

@@ -1,5 +1,4 @@
 from markupsafe import escape
-from werkzeug.exceptions import BadRequest
 import datetime
 import re
 
@@ -8,10 +7,12 @@ MAX_STR_LEN = 1024
 
 def sanitize_id(id_value: str) -> int:
     """Convert id parameter to int, raising BadRequest if invalid."""
-    try:
-        return int(id_value)
-    except (TypeError, ValueError):
-        raise BadRequest("Invalid id parameter")
+    intValue = int(id_value)
+
+    if (intValue < 0):
+        raise ValueError("ID numbers must be positive integers")
+    
+    return intValue
 
 
 def sanitize_str(value: str, max_length: int = MAX_STR_LEN) -> str:
@@ -22,9 +23,9 @@ def sanitize_str(value: str, max_length: int = MAX_STR_LEN) -> str:
     enforces a length limit to avoid overflow attacks.
     """
     if not isinstance(value, str):
-        raise BadRequest("Invalid input type")
+        raise ValueError("Invalid input type")
     if len(value) > max_length:
-        raise BadRequest("Input too long")
+        raise ValueError("Input too long")
 
     # Escape HTML first to neutralize script tags
     escaped_value = escape(value)
@@ -38,8 +39,6 @@ def sanitize_str(value: str, max_length: int = MAX_STR_LEN) -> str:
 def sanitize_datetime(value: str) -> datetime.datetime:
     """Parse ISO formatted datetime string."""
     if not isinstance(value, str):
-        raise BadRequest("Invalid datetime format")
-    try:
-        return datetime.datetime.fromisoformat(value)
-    except ValueError:
-        raise BadRequest("Invalid datetime format")
+        raise ValueError("Invalid datetime format")
+    
+    return datetime.datetime.fromisoformat(value)

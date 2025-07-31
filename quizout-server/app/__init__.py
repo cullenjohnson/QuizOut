@@ -47,6 +47,10 @@ def create_app():
     from .main import main_blueprint
     app.register_blueprint(main_blueprint)
 
+    # blueprint for REST API of app
+    from .main import restapi_blueprint
+    app.register_blueprint(restapi_blueprint, url_prefix="/api")
+
     socketio.init_app(app, async_mode="threading", cors_allowed_origins="*")
 
     logger.info("SocketIO server started")

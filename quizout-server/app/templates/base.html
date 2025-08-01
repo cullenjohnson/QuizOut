@@ -9,13 +9,12 @@
     <link rel="icon" href="{{ url_for('static', filename='favicon32.png') }}" sizes="32x32">
     <link rel="icon" href="{{ url_for('static', filename='favicon96.png') }}" sizes="96x96">
     <link rel="icon" href="{{ url_for('static', filename='favicon192.png') }}" sizes="192x192">
-    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='libs/bootstrap.css') }}" />
     {% block header_include %}
     {% endblock %}
 </head>
 
 <body  data-bs-theme="dark">
-    <script src="{{ url_for('static', filename='bootstrap.bundle.js') }}"></script>
     <div class="container-lg">
         <nav class="navbar navbar-expand-lg bg-body-tertiary" role="navigation">
             <div class="contianer-fluid">
@@ -52,7 +51,7 @@
             {% endblock %}
         </div>
     </div>
-    <script src="{{ url_for('static', filename='bootstrap.bundle.js')}}"></script>
+    <script src="{{ url_for('static', filename='libs/bootstrap.bundle.js')}}"></script>
 </body>
 
 </html>

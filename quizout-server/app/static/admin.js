@@ -147,7 +147,7 @@ function updateBuzzerPlayerListsHTML() {
     for (let i = 0, team = teams[0]; i < teams.length; team = teams[++i]) {
         let teamFormHTML = `<h5>Team ${i + 1}</h5>`;
         const buzzers = Object.keys(buzzerTeams).filter(key => buzzerTeams[key] === team);
-        for (buzzer of buzzers) {
+        for (let buzzer of buzzers) {
             const playerColor = getPlayerColor(buzzer);
             const playerName = getPlayerName(buzzer);
             teamFormHTML += `
@@ -192,7 +192,7 @@ function escapeHTML(unsafe) {
         .replaceAll("'", "&#039;");
 }
 
-function submitPlayerNames() {
+function savePlayerNames() {
     hideModal(editBuzzerPlayersModal);
     const buzzerTeams = buzzerClientInfo.teamBuzzerInfo.buzzerTeams;
     for (const [buzzer, team] of Object.entries(buzzerTeams)) {
@@ -227,7 +227,7 @@ window.resetBuzzers = resetBuzzers;
 window.playerCorrect = playerCorrect;
 window.playerIncorrect = playerIncorrect;
 window.buzzerTimeout = buzzerTimeout;
-window.submitPlayerNames = submitPlayerNames;
+window.submitPlayerNames = savePlayerNames;
 window.editBuzzerPlayersModal = editBuzzerPlayersModal;
 window.uiReady = uiReady;
 window.hideModal = hideModal;

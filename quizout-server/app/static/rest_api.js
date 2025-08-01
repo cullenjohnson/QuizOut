@@ -37,5 +37,11 @@ export function savePlayerName(playerName, successCallback) {
     xhr.open('POST', url);
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.addEventListener("load", () => successCallback(xhr));
+    xhr.addEventListener("error", (event) => {
+        log.error("Error occurred while saving player.", event);
+    });
+    xhr.addEventListener("abort", (event) => {
+        log.error("Request to save player was aborted.", event);
+    });
     xhr.send(requestBody);
 }

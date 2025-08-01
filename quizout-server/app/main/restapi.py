@@ -18,7 +18,7 @@ def handleError(e):
 def getPlayers():
     players = Player.query \
         .filter_by(created_by=current_user) \
-        .order_by(Player.last_played.desc())
+        .order_by(Player.name.asc())
 
     return [player.serialize() for player in players]
 
@@ -44,7 +44,7 @@ def getPlayer(id):
 
 @restapi.post('/players')
 @login_required
-def createPlayer():
+def createOrUpdatePlayer():
     playerJson = request.get_json()
 
     name = ""
@@ -53,11 +53,19 @@ def createPlayer():
     except (ValueError, TypeError) as e:
         raise BadRequest(f"Invalid Player Name: {e}")
     
-    new_player = Player(name=name, created_by=current_user, last_played=datetime.datetime.now(datetime.UTC))
-    db.session.add(new_player)
+    player = Player.query.filter_by(name=name, created_by=current_user).scalar()
+
+    if player is not None:
+        # If there is already a player of the same name for this user, update the last_played time.
+        player.last_played=datetime.datetime.now(datetime.UTC)
+
+    else:
+        player = Player(name=name, created_by=current_user, last_played=datetime.datetime.now(datetime.UTC))
+        db.session.add(player)
+
     db.session.commit()
 
-    return new_player.serialize()
+    return player.serialize()
 
 @restapi.put('/players/<int:id>')
 @login_required

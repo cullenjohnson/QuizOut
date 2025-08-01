@@ -1,30 +1,90 @@
 {% extends "base.html" %}
 
 {% block header_include %}
+<style>
+    .background-color-red {
+        background-color: rgb(134, 8, 8);
+        border-color: rgb(143, 67, 67);
+        color: white;
+    }
+    .background-color-orange {
+        background-color: rgb(194, 103, 60);
+        border-color: rgb(177, 125, 101);
+        color: white;
+    }
+    .background-color-yellow {
+        background-color: rgb(253, 255, 109);
+        border-color: rgb(218, 219, 155);
+        color: rgb(0, 0, 0);
+    }
+    .background-color-green {
+        background-color: rgb(5, 133, 16);
+        border-color: rgb(100, 153, 104);
+        color: white;
+    }
+    .background-color-blue {
+        background-color: rgb(5, 29, 133);
+        border-color: rgb(63, 73, 117);
+        color: white;
+    }
+    .background-color-violet {
+        background-color: rgb(98, 9, 134);;
+        border-color: rgb(95, 68, 105);
+        color: white;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="modal" tabindex="-1" id="playerBuzzedModal">
-  <div class="modal-dialog modal-dialog-centered" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-content">
-      <div class="modal-body">
-        <h5 class="text-center"><span class="text-primary-emphasis fw-bold" id="playerNameSpan">PlayerName</span> buzzed!</h5>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="uiReady()">Cancel</button>
-        <button type="button" class="btn btn-success" onclick="playerCorrect()">Correct</button>
-        <button type="button" class="btn btn-danger" onclick="playerIncorrect()">Incorrect</button>
-      </div>
+    <div class="modal-dialog modal-dialog-centered" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-content">
+            <div class="modal-body">
+                <h5 class="text-center"><span class="badge" id="playerNameSpan">PlayerName</span> buzzed!</h5>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="uiReady()">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="playerCorrect()">Correct</button>
+                <button type="button" class="btn btn-danger" onclick="playerIncorrect()">Incorrect</button>
+            </div>
+        </div>
     </div>
-  </div>
+</div>
+
+<div class="modal" tabindex="-1" id="editBuzzerPlayersModal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5">Edit Players</h1>
+                <button type="button" class="btn-close" onclick="hideModal(editBuzzerPlayersModal)"></button>
+            </div>
+            <div class="modal-body">
+                <form id="playersListFormContent">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary"  onclick="hideModal(editBuzzerPlayersModal)">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="submitPlayerNames()">Save</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="text-center">
-    <h1 class="mb-4">QuizOut Admin</h1>
+    <h1 class="mb-4">Quiz Out Admin</h1>
 
     <div class="mb-4">
         <p id="statusP"><span class="text-warning-emphasis">🛜 Connecting to server...</span></p>
         <p id="buzzerTimerP" class="fs-2 text-center d-none">0.0 sec</p>
+    </div>
+
+    <div class="mb-4">
+        <p>
+            <span id="playersList"></span>
+            <button id="editPlayersBtn" class="btn d-inline btn-sm btn-link align-baseline " onClick="editBuzzerPlayersModal.show()">
+                Edit Player Names
+            </button>
+        </p>
     </div>
 
     <button id="activateBuzzersBtn" type="button" class="btn btn-primary d-inline-block mb-4" onclick="resetBuzzers([])" disabled>Activate All Buzzers</button>
@@ -33,6 +93,9 @@
     <button id="timeoutBtn" type="button" class="btn btn-secondary d-inline-block mb-4" onclick="buzzerTimeout()">Timeout</button>
     <br>
 </div>
+
+<datalist id="playerNamesDatalist">
+</datalist>
 
 <script src="{{ url_for('static', filename='socket.io.3.1.3.js') }}"></script>
 <script type="text/javascript">
@@ -43,8 +106,19 @@
     let buzzerTimer = null;
     let buzzerTimerMS = 0;
     let inactiveTeams = [];
+    let buzzerPlayers = {};
+    const colors = [
+        "red",
+        "blue",
+        "yellow",
+        "orange",
+        "green",
+        "violet"
+    ];
+    let submitPlayerNamesRefreshTimeout = null;
 
     const playerBuzzedModal = new bootstrap.Modal(document.getElementById('playerBuzzedModal'));
+    const editBuzzerPlayersModal = new bootstrap.Modal(document.getElementById('editBuzzerPlayersModal'), {backdrop: false, focus: false});
     const playerNameSpan = document.getElementById('playerNameSpan');
     const activateButton = document.getElementById('activateBuzzersBtn')
     const statusP = document.getElementById('statusP');
@@ -62,20 +136,21 @@
 
     socket.on('updateBuzzerClient', function(data) {
         buzzerClientInfo = JSON.parse(data);
-        console.log("updateBuzzerClient", buzzerClientInfo);
+        updateBuzzerPlayerListsHTML();
     });
 
     socket.on('playerAnswering', function(playerKey) {
         lastPlayerKey = playerKey;
 
-        playerNameSpan.innerHTML = `Player ${playerKey}`;
+        playerNameSpan.innerHTML = getPlayerName(playerKey) || `Player ${playerKey}`;
+        playerNameSpan.classList = `badge background-color-${getPlayerColor(playerKey)}`;
         playerBuzzedModal.show();
         stopBuzzerTimer();
     });
 
     function uiReady() {
         activateButton.removeAttribute("disabled");
-        playerBuzzedModal.hide();
+        hideModal(playerBuzzedModal);
         statusP.innerHTML = '💤 Buzzers Inactive';
     }
 
@@ -94,7 +169,7 @@
 
     function playerIncorrect() {
         socket.emit('playerIncorrect', lastPlayerKey);
-        playerBuzzedModal.hide();
+        hideModal(playerBuzzedModal);
         playerTeam = buzzerClientInfo['teamBuzzerInfo']['buzzerTeams'][lastPlayerKey];
 
         inactiveTeams.push(playerTeam);
@@ -150,6 +225,144 @@
         window.clearInterval(buzzerTimer);
         buzzerTimerP.classList.add('d-none');
     }
-    
+
+    function updateBuzzerPlayerListsHTML() {
+        const playersList = document.getElementById('playersList');
+        playersList.innerHTML = '';
+
+        const playersListFormContent = document.getElementById('playersListFormContent');
+        playersListFormContent.innerHTML = '';
+
+        if (buzzerClientInfo == null) {
+            return;
+        }
+
+        const buzzerTeams = buzzerClientInfo.teamBuzzerInfo.buzzerTeams;
+        const teams = buzzerClientInfo.teamBuzzerInfo.teams;
+
+        playersList.innerHTML = `${Object.keys(buzzerTeams).length} players connected. `;
+
+        for (let i = 0, team = teams[0]; i < teams.length; team = teams[++i]) {
+            let teamFormHTML = `<h5>Team ${i + 1}</h5>`;
+            const buzzers = Object.keys(buzzerTeams).filter(key => buzzerTeams[key] === team);
+            for (buzzer of buzzers) {
+                const playerColor = getPlayerColor(buzzer);
+                const playerName = getPlayerName(buzzer);
+                teamFormHTML += `
+                    <div class="input-group mb-3">
+                        <span class="input-group-text background-color-${playerColor}" id="basic-addon-${buzzer}" >Player ${buzzer}</span>
+                        <input id="playerName-${buzzer}" type="text" class="form-control"
+                            placeholder="Player Name" aria-label="Player ${buzzer} Name" aria-describedby="basic-addon-${buzzer}" value="${escapeHTML(playerName)}"
+                            list="playerNamesDatalist">
+                    </div>`;
+            }
+
+            playersListFormContent.innerHTML += teamFormHTML;
+        }
+        
+        const playerNameList = document.getElementById('playerNamesDatalist');
+        let playerListHTML = '';
+        const playerNames = Object.values(allPlayers).map(p => p.name).sort();
+        for (let playerName of playerNames) {
+            playerListHTML += `<option value="${playerName}">`;
+        }
+        playerNameList.innerHTML = playerListHTML;
+    }
+
+    function getPlayerColor(buzzer) {
+        const colorIndex = (parseInt(buzzer) - 1) % 6;
+        return colors[colorIndex];
+    }
+
+    function getPlayerName(buzzer) {
+        if (!(buzzer in buzzerPlayers)) {
+            return '';
+        }
+
+        return buzzerPlayers[buzzer].name;
+    }
+
+    function escapeHTML(unsafe) {
+        return unsafe
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+    }
+
+    function submitPlayerNames() {
+        hideModal(editBuzzerPlayersModal);
+        const buzzerTeams = buzzerClientInfo.teamBuzzerInfo.buzzerTeams;
+        for (const [buzzer, team] of Object.entries(buzzerTeams)) {
+            const playerName = document.getElementById(`playerName-${buzzer}`).value.trim();
+            if (playerName != '') {
+                const buzzerClone = buzzer;
+                savePlayerName(playerName, (xhr) => {
+                    const playerResponse = xhr.response;
+                    const player = JSON.parse(playerResponse);
+                    buzzerPlayers[buzzerClone] = player;
+                    allPlayers[player.id] = player;
+
+                    if (submitPlayerNamesRefreshTimeout != null)
+                        window.clearTimeout(submitPlayerNamesRefreshTimeout);
+                    submitPlayerNamesRefreshTimeout = window.setTimeout(() => updateBuzzerPlayerListsHTML(), 1000);
+                });
+            }
+        }
+    }
+
+    function hideModal(modal) {
+        const activeElement = document.activeElement;
+        if (activeElement) {
+            activeElement.blur();
+        }
+
+        modal.hide();
+    }
+
+    // REST API
+    let allPlayers = {};
+    const restBaseURL = "/api";
+
+    getPlayers();
+
+    function getPlayers() {
+        const getPlayersURL = `${restBaseURL}/players`;
+
+        const xhr = new XMLHttpRequest();
+        xhr.open("GET", getPlayersURL);
+
+        xhr.addEventListener("load", (event) => {
+            const results = xhr.response;
+            for (player of JSON.parse(results)) {
+                allPlayers[player.id] = player;
+            }
+
+            updateBuzzerPlayerListsHTML();
+        });
+
+        xhr.addEventListener("error", (event) => {
+            log.error("Error occurred while getting list of all players.", event);
+        });
+
+        xhr.addEventListener("abort", (event) => {
+            log.error("Request to get all players was aborted.", event);
+        });
+
+        xhr.send();
+    }
+
+    function savePlayerName(playerName, successCallback) {
+        const url = `${restBaseURL}/players`;
+
+        const requestBody = JSON.stringify({name: playerName.trim()});
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', url);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.addEventListener("load", (event) => successCallback(xhr));
+        xhr.send(requestBody);
+    }
+
 </script>
 {% endblock %}

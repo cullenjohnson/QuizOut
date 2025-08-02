@@ -13,6 +13,8 @@ let buzzerTimer = null;
 let buzzerTimerMS = 0;
 let inactiveTeams = [];
 let buzzerPlayers = {};
+const BUZZER_PLAYERS_STORAGE_KEY = 'buzzerPlayers';
+loadBuzzerPlayersFromLocalStorage();
 const colors = [
     "red",
     "blue",
@@ -204,11 +206,32 @@ function savePlayerNames() {
                 const player = JSON.parse(playerResponse);
                 buzzerPlayers[buzzerClone] = player;
                 allPlayers[player.id] = player;
+                saveBuzzerPlayersToLocalStorage();
 
                 if (submitPlayerNamesRefreshTimeout != null)
                     window.clearTimeout(submitPlayerNamesRefreshTimeout);
                 submitPlayerNamesRefreshTimeout = window.setTimeout(() => updateBuzzerPlayerListsHTML(), 1000);
             });
+        }
+    }
+}
+
+function saveBuzzerPlayersToLocalStorage() {
+    window.localStorage.setItem(BUZZER_PLAYERS_STORAGE_KEY, JSON.stringify(buzzerPlayers));
+}
+
+function loadBuzzerPlayersFromLocalStorage() {
+    const stored = window.localStorage.getItem(BUZZER_PLAYERS_STORAGE_KEY);
+    if (stored) {
+        try {
+            buzzerPlayers = JSON.parse(stored);
+            for (const player of Object.values(buzzerPlayers)) {
+                if (player && player.id !== undefined) {
+                    allPlayers[player.id] = player;
+                }
+            }
+        } catch (e) {
+            console.warn('Failed to load buzzer players from localStorage', e);
         }
     }
 }

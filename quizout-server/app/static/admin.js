@@ -23,7 +23,7 @@ const colors = [
 ];
 let submitPlayerNamesRefreshTimeout = null;
 
-const playerBuzzedModal = new bootstrap.Modal(document.getElementById('playerBuzzedModal'));
+const playerBuzzedModal = new bootstrap.Modal(document.getElementById('playerBuzzedModal'), {backdrop: "static"});
 const editBuzzerPlayersModal = new bootstrap.Modal(document.getElementById('editBuzzerPlayersModal'), {backdrop: false, focus: false});
 const playerNameSpan = document.getElementById('playerNameSpan');
 const activateButton = document.getElementById('activateBuzzersBtn');
@@ -44,11 +44,26 @@ function handlePlayerAnswering(playerKey) {
     stopBuzzerTimer();
 }
 
+function handleBuzzersListening(data) {
+    startBuzzerTimer();
+}
+
+function handleBuzzersCanceled(data) {
+    allTeamsIncorrect();
+}
+
 initSocket({
-    onConnect: uiReady,
+    onConnect: firstConnect,
     onUpdateBuzzerClient: handleUpdateBuzzerClient,
-    onPlayerAnswering: handlePlayerAnswering
+    onPlayerAnswering: handlePlayerAnswering,
+    onBuzzersListening: handleBuzzersListening,
+    onBuzzersCanceled: handleBuzzersCanceled
 });
+
+function firstConnect() {
+    emitBuzzerTimeout();
+    uiReady();
+}
 
 function uiReady() {
     activateButton.removeAttribute("disabled");
@@ -57,11 +72,17 @@ function uiReady() {
 }
 
 function resetBuzzers(inactiveTeamsA) {
+    statusP.innerHTML = `
+    <span class="text-warning-emphasis">
+        <div class="spinner-border spinner-border-sm" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        ⚡Asking buzzers to activate...
+    </span>`;
+
     const data = JSON.stringify({inactive_teams: inactiveTeamsA});
     inactiveTeams = inactiveTeamsA;
     emitResetBuzzers(data);
-    startBuzzerTimer();
-    activateButton.setAttribute("disabled", "");
 }
 
 function playerCorrect() {
@@ -72,19 +93,15 @@ function playerCorrect() {
 function playerIncorrect() {
     emitPlayerIncorrect(lastPlayerKey);
     hideModal(playerBuzzedModal);
-    playerTeam = buzzerClientInfo['teamBuzzerInfo']['buzzerTeams'][lastPlayerKey];
+    activateButton.removeAttribute("disabled");
+}
 
-    inactiveTeams.push(playerTeam);
-
-    if (inactiveTeams.length < buzzerClientInfo['teamBuzzerInfo']['teams'].length) {
-        startBuzzerTimer();
-    } else {
-        statusP.innerHTML = `
-                <span class="text-danger-emphasis">❌ Each team gave an incorrect response to the last question.</span>
-                <br>
-                💤 Buzzers Inactive`;
-        activateButton.removeAttribute("disabled");
-    }
+function allTeamsIncorrect() {
+    statusP.innerHTML = `
+        <span class="text-danger-emphasis">❌ Each team gave an incorrect response to the last question.</span>
+        <br>
+        💤 Buzzers Inactive`;
+    activateButton.removeAttribute("disabled");
 }
 
 function buzzerTimeout() {
@@ -94,6 +111,8 @@ function buzzerTimeout() {
 }
 
 function startBuzzerTimer() {
+    activateButton.setAttribute("disabled", "");
+
     buzzerTimerP.classList.remove('d-none');
     buzzerTimerP.innerHTML = `<span class="text-primary-emphasis">0.0 seconds</span>`;
     statusP.innerHTML = `

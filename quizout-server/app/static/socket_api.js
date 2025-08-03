@@ -1,6 +1,6 @@
 export let socket = null;
 
-export function initSocket({ onConnect, onUpdateBuzzerClient, onPlayerAnswering } = {}) {
+export function initSocket({ onConnect, onUpdateBuzzerClient, onPlayerAnswering, onBuzzersListening, onBuzzersCanceled } = {}) {
     socket = io.connect('http://' + document.domain + ':' + location.port);
 
     socket.on('connect', function () {
@@ -24,6 +24,18 @@ export function initSocket({ onConnect, onUpdateBuzzerClient, onPlayerAnswering 
     socket.on('playerAnswering', function(playerKey) {
         if (typeof onPlayerAnswering === 'function') {
             onPlayerAnswering(playerKey);
+        }
+    });
+
+    socket.on('buzzersListening', function(data) {
+        if (typeof onBuzzersListening === 'function') {
+            onBuzzersListening(data);
+        }
+    });
+
+    socket.on('buzzersCanceled', function(data) {
+        if (typeof onBuzzersCanceled === 'function') {
+            onBuzzersCanceled(data);
         }
     });
 }

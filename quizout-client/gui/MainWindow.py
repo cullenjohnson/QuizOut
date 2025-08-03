@@ -127,6 +127,7 @@ class MainWindow(QMainWindow):
         self.soundEffectPlayer.playSound(SoundEffect.ActivateSound)
         self.inactiveTeams = data.get("inactive_teams", [])
         self.listening = True
+        self.send_buzzers_listening()
 
     def on_buzzer_timeout(self):
         if self.listening:
@@ -154,6 +155,8 @@ class MainWindow(QMainWindow):
             self.reactivateTimer.timeout.connect(lambda: self.on_activate_buzzers({'inactive_teams': self.inactiveTeams}))
             self.reactivateTimer.setInterval(1000)
             self.reactivateTimer.start()
+        else:
+            self.send_buzzers_canceled()
 
     # TieBreaker Signal handlers
     def on_player_chosen(self, keyPressInfo):
@@ -176,19 +179,6 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         asyncio.run_coroutine_threadsafe(self.socket_client.disconnect(), self.loop)
         event.accept()
-
-    # def on_send_click(self):
-    #     logger.info('Button clicked, sending message to server...')
-    #     try:
-    #         asyncio.run_coroutine_threadsafe(
-    #             self.socket_client.sendMessage('Hello from the client!'),
-    #             self.loop)
-    #     except Exception as e:
-    #         logger.error(f"Failed to connect to server: {e}")
-    #         self.alertDialog = QMessageBox(self)
-    #         self.alertDialog.setText(f"Failed to connect to server: {e}")
-    #         self.alertDialog.setWindowTitle("Connection Error")
-    #         self.alertDialog.exec()
 
     def on_connect_click(self):
         if not self.connecting:
@@ -217,3 +207,19 @@ class MainWindow(QMainWindow):
     def on_buzzer_key_press(self, keyPressInfo):
         if self.listening:
             self.tieBreaker.activate(keyPressInfo, self.inactiveTeams)
+
+    def send_buzzers_listening(self):
+        try:
+            asyncio.run_coroutine_threadsafe(
+                self.socket_client.buzzersListening(self.inactiveTeams),
+                self.loop)
+        except Exception as e:
+            logger.error(f"Failed to tell server buzzers were listening: {e}")
+            
+    def send_buzzers_canceled(self, reason="NO_ACTIVE_TEAMS"):
+        try:
+            asyncio.run_coroutine_threadsafe(
+                self.socket_client.buzzersCanceled(self.inactiveTeams),
+                self.loop)
+        except Exception as e:
+            logger.error(f"Failed to tell server buzzers were canceled: {e}")

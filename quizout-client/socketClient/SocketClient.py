@@ -96,16 +96,23 @@ class SocketClient:
             logger.error(f"Failed to disconnect from {self.url}: {e}")
             raise
 
-    async def sendMessage(self, data=None):
-        try:
-            await self.sio.emit('message', data)
-        except Exception as e:
-            logger.error(f"Failed to send message: {e}")
-            raise
-
     async def playerBuzzed(self, playerKey:str):
         try:
             await self.sio.emit('playerBuzzed', playerKey)
         except Exception as e:
-            logger.error(f"Failed to send message: {e}")
+            logger.error(f"Failed to send playerBuzzed event: {e}")
+            raise
+
+    async def buzzersListening(self, inactiveTeams=[]):
+        try:
+            await self.sio.emit('buzzersListening', {'inactiveTeams' : inactiveTeams})
+        except Exception as e:
+            logger.error(f"Failed to send buzzersListening event: {e}")
+            raise
+
+    async def buzzersCanceled(self, reason = "NO_ACTIVE_TEAMS"):
+        try:
+            await self.sio.emit('buzzersCanceled', {'reason' : reason})
+        except Exception as e:
+            logger.error(f"Failed to send buzzersCanceled event: {e}")
             raise

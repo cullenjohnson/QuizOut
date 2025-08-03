@@ -76,3 +76,13 @@ def playerCorrect(playerKey):
 def playerIncorrect(playerKey):
     logger.debug(f'Client [sid {request.sid}] said player {playerKey} was incorrect.')
     socketio.emit('playerIncorrect', playerKey)
+
+@socketio.event
+def buzzersListening(data):
+    logger.info(f'Client [sid {request.sid}] said buzzers are listening. {data}')
+    socketio.emit('buzzersListening', data)
+
+@socketio.event
+def buzzersCanceled(data):
+    logger.info(f'Client [sid {request.sid}] said buzzers canceled: {data}')
+    socketio.emit('buzzersCanceled', data)

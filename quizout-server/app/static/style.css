@@ -1,0 +1,30 @@
+.background-color-red {
+        background-color: rgb(134, 8, 8);
+        border-color: rgb(143, 67, 67);
+        color: white;
+}
+.background-color-orange {
+    background-color: rgb(194, 103, 60);
+    border-color: rgb(177, 125, 101);
+    color: white;
+}
+.background-color-yellow {
+    background-color: rgb(253, 255, 109);
+    border-color: rgb(218, 219, 155);
+    color: rgb(0, 0, 0);
+}
+.background-color-green {
+    background-color: rgb(5, 133, 16);
+    border-color: rgb(100, 153, 104);
+    color: white;
+}
+.background-color-blue {
+    background-color: rgb(5, 29, 133);
+    border-color: rgb(63, 73, 117);
+    color: white;
+}
+.background-color-violet {
+    background-color: rgb(98, 9, 134);;
+    border-color: rgb(95, 68, 105);
+    color: white;
+}

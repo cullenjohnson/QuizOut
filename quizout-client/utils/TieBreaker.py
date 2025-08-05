@@ -87,7 +87,7 @@ class TieBreaker(QObject):
                 # Neither team has been chosen before
                 if index1 == index2:
                     winningKeypress = random.choice([keypress1, keypress2])
-                    logger.info("TIE! {winnindKeypress[0]} chosen by coin toss.")
+                    logger.info(f"TIE! {winningKeypress[0]} chosen by coin toss.")
                 # team for keypress1 was chosen least recently
                 elif index1 < index2:
                     winningKeypress = keypress1

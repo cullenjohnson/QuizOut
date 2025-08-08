@@ -11,9 +11,11 @@ instance/
 # Environments
 .env
 .venv
+.test-venv
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
 **/.venv
+**/.test-venv

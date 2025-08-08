@@ -8,7 +8,6 @@ from data import TeamBuzzerInfo
 logger = logging.getLogger(__name__)
 
 class TieBreaker(QObject):
-
     playerChosen = Signal(tuple)
     # Some keyboard buffers treat simultaneous presses as 1ms apart, but always favor the same key. This variable will allow the logic to
     # treat keypresses that are milliseconds apart as simultaneous to try to ensure fairness.
@@ -22,6 +21,7 @@ class TieBreaker(QObject):
         self.timer.timeout.connect(self.onTimeout)
         self.keypress = None
         self.tieThresholdMS = tieThresholdMS
+        self.randomlyChosenTeam = None
 
         super().__init__()
 

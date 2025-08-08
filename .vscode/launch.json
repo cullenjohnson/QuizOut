@@ -18,6 +18,20 @@
             },
         },
         {
+            "name": "Test Client",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "justMyCode": true,
+            "console": "integratedTerminal",
+            "python": "quizout-client/.test-venv/Scripts/python",
+            "consoleName": "CLIENT TESTS",
+            "env": {
+                "VIRTUAL_ENV": ".test-venv",
+                "PATH": "quizout-client/.test-venv/Scripts:${env:PATH}"
+            },
+        },
+        {
             "name": "Server",
             "type": "debugpy",
             "request": "launch",

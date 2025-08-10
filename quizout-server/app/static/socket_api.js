@@ -1,7 +1,17 @@
 export let socket = null;
 
-export function initSocket({ onConnect, onUpdateBuzzerClient, onPlayerAnswering, onBuzzersListening, onBuzzersCanceled } = {}) {
-    socket = io.connect('http://' + document.domain + ':' + location.port);
+export function initSocket({
+        onBuzzersCanceled,
+        onBuzzersListening,
+        onBuzzerTimeout,
+        onConnect,
+        onPlayerAnswering,
+        onPlayerCorrect,
+        onPlayerIncorrect,
+        onResetBuzzers,
+        onUpdateBuzzerClient
+    } = {}) {
+    socket = io.connect('http://' + location.hostname + ':' + location.port);
 
     socket.on('connect', function () {
         socket.emit('adminClientConnected');
@@ -36,6 +46,30 @@ export function initSocket({ onConnect, onUpdateBuzzerClient, onPlayerAnswering,
     socket.on('buzzersCanceled', function(data) {
         if (typeof onBuzzersCanceled === 'function') {
             onBuzzersCanceled(data);
+        }
+    });
+
+    socket.on('playerCorrect', function(data) {
+        if (typeof onPlayerCorrect === 'function') {
+            onPlayerCorrect(data);
+        }
+    });
+
+    socket.on('playerIncorrect', function(data) {
+        if (typeof onPlayerIncorrect === 'function') {
+            onPlayerIncorrect(data);
+        }
+    });
+
+    socket.on('resetBuzzers', function(data) {
+        if (typeof onResetBuzzers === 'function') {
+            onResetBuzzers(data);
+        }
+    });
+
+    socket.on('buzzerTimeout', function(data) {
+        if (typeof onBuzzerTimeout === 'function') {
+            onBuzzerTimeout(data);
         }
     });
 }

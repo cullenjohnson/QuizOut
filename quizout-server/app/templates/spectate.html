@@ -1,7 +1,22 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html>
 
-{% block header_include %}
-{% endblock %}
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Quiz Out Admin</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon32.png') }}" sizes="32x32">
+    <link rel="icon" href="{{ url_for('static', filename='favicon96.png') }}" sizes="96x96">
+    <link rel="icon" href="{{ url_for('static', filename='favicon192.png') }}" sizes="192x192">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
 
-{% block content %}
-{% endblock %}
+<body>
+
+
+    <script src="{{ url_for('static', filename='libs/bootstrap.bundle.js')}}"></script>
+    <script src="{{ url_for('static', filename='spectate.js')}}"></script>
+</body>
+
+</html>

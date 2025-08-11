@@ -10,7 +10,7 @@ import {
 let buzzerClientInfo = null;
 let lastPlayerKey = null;
 let buzzerTimer = null;
-let buzzerTimerMS = 0;
+let buzzerTimerStart = 0;
 let inactiveTeams = [];
 let buzzerPlayers = {};
 const colors = [
@@ -123,9 +123,10 @@ function startBuzzerTimer() {
                 Waiting for players to buzz...
             </span>`;
 
-    buzzerTimerMS = 0;
+    buzzerTimerStart = new Date().getTime();
+
     buzzerTimer = window.setInterval(() => {
-        buzzerTimerMS += 100;
+        const buzzerTimerMS = new Date().getTime() - buzzerTimerStart;
         const buzzerTimerSeconds = buzzerTimerMS / 1000;
         let colorClass = "";
 

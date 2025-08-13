@@ -15,7 +15,7 @@ class KeyMonitorPynput(AbstractKeyMonitor):
         self._communicator = communicator
         self._pressedKeys = []
 
-    def communicator(self) -> GlobalKeyMonitorCommunicator:
+    def _communicator(self) -> GlobalKeyMonitorCommunicator:
         return self._communicator
 
     def monitor_keyboards(self):

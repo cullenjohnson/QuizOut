@@ -8,11 +8,14 @@ from .GlobalKeyMonitorCommunicator import GlobalKeyMonitorCommunicator
 logger = logging.getLogger(__name__)
 
 class KeyMonitorEvDev(AbstractKeyMonitor):
-    
-    communicator: GlobalKeyMonitorCommunicator
+
+    _communicator: GlobalKeyMonitorCommunicator
 
     def __init__(self, communicator: GlobalKeyMonitorCommunicator):
-        self.communicator = communicator
+        self._communicator = communicator
+
+    def communicator(self) -> GlobalKeyMonitorCommunicator:
+        return self.commmunicator
 
     def monitor_keyboards(self):
         # Start monitoring in daemon thread
@@ -46,12 +49,12 @@ class KeyMonitorEvDev(AbstractKeyMonitor):
                                 # Try to convert keycode to character
                                 if event.code >= evdev.ecodes.KEY_1 and event.code <= evdev.ecodes.KEY_9:
                                     char = str(event.code - evdev.ecodes.KEY_1 + 1)
-                                    self.communicator.keypress.emit(char)
+                                    self._communicator.keypress.emit(char)
                                 elif event.code == evdev.ecodes.KEY_0:
-                                    self.communicator.keypress.emit('0')
+                                    self._communicator.keypress.emit('0')
                                 elif event.code >= evdev.ecodes.KEY_A and event.code <= evdev.ecodes.KEY_Z:
                                     char = chr(event.code - evdev.ecodes.KEY_A + ord('a'))
-                                    self.communicator.keypress.emit(char)
+                                    self._communicator.keypress.emit(char)
                             except Exception as e:
                                 logger.debug(f"Error processing key event: {e}")
         except Exception as e:

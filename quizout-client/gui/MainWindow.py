@@ -55,7 +55,6 @@ class MainWindow(QMainWindow):
 
     def init_ui(self):
         self.setWindowTitle('Quizout Buzzer Client')
-        self.setWindowFlag(Qt.WindowStaysOnTopHint, True)
 
         self.resize(800, 600)
         self.connectButton = QPushButton('Connect to Server', self)
@@ -93,12 +92,6 @@ class MainWindow(QMainWindow):
         except Exception as e:
                 self.socketClientComm.clientError.emit(e)
 
-    # Raise and focus
-    def focus_window(self):
-        self.raise_()
-        self.activateWindow()
-        self.show()
-
     # SocketClient Signal handlers
     def on_client_error(self, e):
         self.connecting = False
@@ -122,7 +115,6 @@ class MainWindow(QMainWindow):
         self.disconnectButton.setEnabled(False)
 
     def on_activate_buzzers(self, data:dict):
-        self.focus_window()
         logger.info(f"Listening to buzzers! {data}")
         self.soundEffectPlayer.playSound(SoundEffect.ActivateSound)
         self.inactiveTeams = data.get("inactive_teams", [])

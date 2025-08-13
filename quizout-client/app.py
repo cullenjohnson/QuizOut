@@ -5,9 +5,9 @@ import logging
 import logging.handlers
 from PySide6.QtWidgets import QApplication
 
-from utils import KeyPressHandler
 from gui import MainWindow
 from data import TeamBuzzerInfo
+from keymonitor.GlobalKeyMonitor import GlobalKeyMonitor
 
 default_config = {
         'server': {
@@ -85,10 +85,15 @@ def get_config():
 if __name__ == "__main__":
     config = setup_app()
     app = QApplication(sys.argv)
-    keyPressHandler = KeyPressHandler(TeamBuzzerInfo(config["team_buzzer_keys"]))
-    app.installEventFilter(keyPressHandler)
+
+    # Start global keyboard monitoring
+    keyMonitor = GlobalKeyMonitor(TeamBuzzerInfo(config["team_buzzer_keys"]))
+    keyMonitor.start_monitoring()
+    
     window = MainWindow(config)
     window.show()
-    keyPressHandler.connectCallback(window.on_buzzer_key_press)
     window.raise_()
+
+    keyMonitor.register_callback(window.on_buzzer_key_press)
+    
     sys.exit(app.exec())

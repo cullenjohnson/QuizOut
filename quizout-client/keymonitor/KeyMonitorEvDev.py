@@ -14,8 +14,8 @@ class KeyMonitorEvDev(AbstractKeyMonitor):
     def __init__(self, communicator: GlobalKeyMonitorCommunicator):
         self._communicator = communicator
 
-    def communicator(self) -> GlobalKeyMonitorCommunicator:
-        return self.commmunicator
+    def _communicator(self) -> GlobalKeyMonitorCommunicator:
+        return self._commmunicator
 
     def monitor_keyboards(self):
         # Start monitoring in daemon thread

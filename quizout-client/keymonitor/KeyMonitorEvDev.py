@@ -1,6 +1,7 @@
 import logging
 import threading
 import select
+import evdev
 
 from .AbstractKeyMonitor import AbstractKeyMonitor
 from .GlobalKeyMonitorCommunicator import GlobalKeyMonitorCommunicator

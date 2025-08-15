@@ -1,18 +1,21 @@
 from typing import Dict
 import pygame
+import logging
 from PySide6.QtCore import QObject
 
 from resources import soundEffectPaths
 from utils.Enums import SoundEffect
 
+logger = logging.getLogger(__name__)
+
 class SoundEffectPlayer:
     soundEffects: Dict[SoundEffect, pygame.mixer.Sound] = {}
     SOUND_EFFECT_VOLUMES: Dict[SoundEffect, float] = {
         SoundEffect.ActivateSound: 1.0,
-        SoundEffect.BuzzSound: 0.75,
-        SoundEffect.CorrectSound: 0.75,
-        SoundEffect.IncorrectSound: 0.9,
-        SoundEffect.TimeoutSound: 0.5,
+        SoundEffect.BuzzSound: 1.0,
+        SoundEffect.CorrectSound: 1.0,
+        SoundEffect.IncorrectSound: 1.0,
+        SoundEffect.TimeoutSound: 1.0,
     }
 
     def __init__(self, parent: QObject):
@@ -25,20 +28,23 @@ class SoundEffectPlayer:
 
     def initSoundEffect(self, effect: SoundEffect):
         try:
+            logger.info(f"Initializing sound effect {effect.name}...")
             sound = pygame.mixer.Sound(soundEffectPaths[effect])
             sound.set_volume(self.SOUND_EFFECT_VOLUMES[effect])
+            logger.info(f"Sound effect {effect.name} initialized.")
             return sound
         except pygame.error as e:
-            print(f"Error loading sound effect {effect}: {e}")
+            logger.error(f"Error loading sound effect {effect.name}: {e}")
             # Return a dummy sound object that won't crash when played
             return pygame.mixer.Sound(buffer=b'\x00' * 1024)  # Silent sound
 
     def playSound(self, effect: SoundEffect):
         if effect in self.soundEffects:
             try:
+                logger.info(f"Playing sound {effect.name}")
                 self.soundEffects[effect].play()
             except pygame.error as e:
-                print(f"Error playing sound effect {effect}: {e}")
+                logger.error(f"Error playing sound effect {effect.name}: {e}")
 
     def __del__(self):
         # Clean up pygame mixer when the object is destroyed

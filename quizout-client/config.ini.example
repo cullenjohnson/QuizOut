@@ -1,0 +1,19 @@
+[server]
+url = http://localhost:8000
+reconnection = True
+reconnection_attempts = 5
+reconnection_delay = 1
+reconnection_delay_max = 5
+
+[logging]
+level = DEBUG
+console_handler = True
+file_handler = True
+log_backup_count = 7
+
+[team_buzzer_keys]
+team1 = 1,2,3
+team2 = 4,5,6
+
+[buzzerSystem]
+tieThresholdMS = 2

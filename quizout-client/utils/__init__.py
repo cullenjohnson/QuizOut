@@ -1,2 +1,1 @@
 from .SocketClientCommunicator import SocketClientCommunicator
-from .TieBreaker import TieBreaker

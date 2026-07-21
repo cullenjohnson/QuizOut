@@ -1,5 +1,13 @@
 # QuizOut
-QuizOut is a server and client for a gameshow buzzer. The client will treat keyboard keys as individual buzzers for each user.
+QuizOut is a python solution hosting Jeopardy-style trivia games with a physical buzzer. I wrote this software to aid in hosting trivia games between 2 teams of 3 players each (but player count and teams are configurable). To give the players physical buzzers, I bought a 6-key keyboard from [techkeys.us](https://techkeys.us) and soldered extension wires with 3d-printed handles onto the keyboard so that each player could have his own buzzer. The buzzers follow the famous Jeopardy rule, where players who buzz in before the host has activated the buzzers will have their buzzers deactivated for a short time.
+
+## Server/Client Architecture
+
+Quizout is broken into a server and a client. They can be run on the same computer or separately. For my purposes, I ran the server on a Windows laptop and the client on a Raspberry Pi 4.
+
+The server hosts a web page where admins can activate the buzzers and see which player buzzed in first.
+
+The client is a pyqt desktop application that handles the keyboard input and sound effects. The client treats keyboard keys as individual buzzers for each player. The keys are configurable via a config.ini file (see [quizout-client/config.ini.example](./quizout-client/config.ini.example).)
 
 ## Project layout
 Both server and client are included in this repo with their respective directories and corresponding requirements.txt files. Use these to create separate venv's for each.
@@ -12,6 +20,7 @@ First, create a .env file in the quizout-server directory. The contents should l
 ```
 # .env file
 SECRET_LOCATION=~/.quizoutserver/secrets/
+SQLITE_PATH=~/.quizoutserver/db/db.sqlite
 DEBUG=True
 ```
 
@@ -21,6 +30,8 @@ DEBUG=True
  - db_pass
 
 These should each contain your desired secret.
+
+`SQLITE_PATH` should point to where you want the server to store its sqlite DB. The db file will be created the first time you run the application, so there is no need to create the file yourself.
 
 ### Docker
 For running the server in production, the Dockerfile is set up to run the server with gunicorn. The quickest way to get it up and running is to use docker compose (i.e., navigate to the server directory and run `$ docker compose up -d`).

@@ -8,8 +8,8 @@ from .SoundEffectPlayer import SoundEffectPlayer
 from socketClient.SocketClient import SocketClient
 from socketClient.ServerConfig import ServerConfig
 from data import ClientInfo, TeamBuzzerInfo
+from buzzerlogic.TieBreaker import TieBreaker
 from utils.SocketClientCommunicator import SocketClientCommunicator
-from utils.TieBreaker import TieBreaker
 from utils.Enums import SoundEffect
 
 logger = logging.getLogger(__name__)
@@ -18,7 +18,6 @@ class MainWindow(QMainWindow):
     def __init__(self, config):
         super().__init__()
         self.connecting = False
-        self.listening = False
 
         self.socketClientComm = SocketClientCommunicator()
         self.socketClientComm.connected.connect(self.on_connected)
@@ -118,13 +117,13 @@ class MainWindow(QMainWindow):
         logger.info(f"Listening to buzzers! {data}")
         self.soundEffectPlayer.playSound(SoundEffect.ActivateSound)
         self.inactiveTeams = data.get("inactive_teams", [])
-        self.listening = True
+        self.tieBreaker.startListening()
         self.send_buzzers_listening()
 
     def on_buzzer_timeout(self):
-        if self.listening:
+        if self.tieBreaker.isListening():
             logger.info("Buzzers timed out")
-            self.listening = False
+            self.tieBreaker.stopListening()
             self.soundEffectPlayer.playSound(SoundEffect.TimeoutSound)
 
     def on_player_answering(self, playerKey:str):
@@ -152,7 +151,6 @@ class MainWindow(QMainWindow):
 
     # TieBreaker Signal handlers
     def on_player_chosen(self, keyPressInfo):
-        self.listening = False
         (team, key, timestamp) = keyPressInfo
         logger.info(f"Player chosen {keyPressInfo}")
         try:
@@ -197,8 +195,7 @@ class MainWindow(QMainWindow):
 
     # Other methods
     def on_buzzer_key_press(self, keyPressInfo):
-        if self.listening:
-            self.tieBreaker.activate(keyPressInfo, self.inactiveTeams)
+        self.tieBreaker.handleKeyPress(keyPressInfo, self.inactiveTeams)
 
     def send_buzzers_listening(self):
         try:

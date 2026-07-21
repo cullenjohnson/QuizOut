@@ -7,11 +7,11 @@ from PySide6.QtWidgets import QMainWindow
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from utils.TieBreaker import TieBreaker
+from buzzerlogic.TieBreaker import TieBreaker
 from data.TeamBuzzerInfo import TeamBuzzerInfo
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def team_buzzer_info():
     testTeams = {
         "team_buzzer_keys": {
@@ -26,9 +26,10 @@ def team_buzzer_info():
 
 @pytest.fixture
 def tie_breaker(team_buzzer_info, qtbot):
-    tie_breaker = TieBreaker(team_buzzer_info, tieThresholdMS=2)
+    tie_breaker = TieBreaker(team_buzzer_info, tieThresholdMS=2, freezeTimeoutLengthMS=500)
     qtbot.addWidget(TestWindow(tie_breaker))
-    return tie_breaker
+    yield tie_breaker
+    tie_breaker.fullReset()
 
 class TestWindow(QMainWindow):
     tieBreaker:TieBreaker
@@ -47,46 +48,154 @@ class TestTieBreakerInitialization:
         assert tie_breaker.chosenTeams == []
         assert tie_breaker.tieThresholdMS == 5
         assert tie_breaker.keypress is None
-        assert tie_breaker.timer.isSingleShot()
+        assert tie_breaker.afterBuzzTimer.isSingleShot()
     
     def test_default_tie_threshold(self, team_buzzer_info):
         tie_breaker = TieBreaker(team_buzzer_info, tieThresholdMS=10)
         assert tie_breaker.tieThresholdMS == 10
 
 
-class TestActivateMethod:
+class TestHandleKeyPressMethod:
     
-    @patch('utils.TieBreaker.logger')
-    def test_activate_ignores_inactive_teams(self, mock_logger, tie_breaker):
+    @patch('buzzerlogic.TieBreaker.logger')
+    def test_handleKeyPress_ignores_inactive_teams(self, mock_logger, tie_breaker):
         keypress_info = ('Team A', 'a', 1000)
         inactive_teams = ['Team A']
-        
-        tie_breaker.activate(keypress_info, inactive_teams)
+        tie_breaker.startListening()
+        tie_breaker.handleKeyPress(keypress_info, inactive_teams)
         
         mock_logger.info.assert_called_once_with(
             "Keypress ignored because Team A is one of the inactive teams. (['Team A'])"
         )
-        assert not tie_breaker.timer.isActive()
+        assert not tie_breaker.afterBuzzTimer.isActive()
+        tie_breaker.stopListening()
+
     
-    def test_activate_starts_timer_on_first_keypress(self, tie_breaker):
+    @patch('buzzerlogic.TieBreaker.logger')
+    def test_handleKeyPress_freezes_early_buzzes(self, mock_logger, tie_breaker):
+        keypress_info1 = ('Team A', 'a', 1000)
+        keypress_info2 = ('Team A', 'a', 1200)
+        keypress_info3 = ('Team A', 'a', 1500)
+        keypress_info4 = ('Team A', 'a', 1600)
+        tie_breaker.handleKeyPress(keypress_info1)
+        
+        mock_logger.info.assert_called_once_with("Buzzer 'a' frozen for buzzing in too early")
+        assert not tie_breaker.afterBuzzTimer.isActive()
+        assert tie_breaker.keypress is None
+        assert tie_breaker.isFrozen(keypress_info1)
+
+        # Verify subsequent buzzes from frozen buzzers are frozen until after the freeze timeout
+        tie_breaker.startListening()
+        tie_breaker.handleKeyPress(keypress_info2)
+        mock_logger.info.assert_called_with("Keypress ignored because buzzer 'a' has been frozen")
+        assert not tie_breaker.afterBuzzTimer.isActive()
+        assert tie_breaker.keypress is None
+        assert tie_breaker.isFrozen(keypress_info2)
+        
+        tie_breaker.handleKeyPress(keypress_info3)
+        mock_logger.info.assert_called_with("Keypress ignored because buzzer 'a' has been frozen")
+        assert not tie_breaker.afterBuzzTimer.isActive()
+        assert tie_breaker.keypress is None
+        assert tie_breaker.isFrozen(keypress_info3)
+
+        # Keypress 4 is valid now that the freeze timeout has expired
+        tie_breaker.handleKeyPress(keypress_info4)
+        assert tie_breaker.afterBuzzTimer.isActive()
+        assert tie_breaker.keypress == keypress_info4
+        assert not tie_breaker.isFrozen(keypress_info4)
+
+        # Verify resetFrozen Buzzers un-freezes buzzer 'a'
+        tie_breaker.resetFrozenBuzzers()
+        assert not tie_breaker.isFrozen(keypress_info1)
+        assert not tie_breaker.isFrozen(keypress_info2)
+        assert not tie_breaker.isFrozen(keypress_info3)
+        assert not tie_breaker.isFrozen(keypress_info4)
+        tie_breaker.stopListening()
+
+    def test_handleKeyPress_frozen_players_dont_affect_other_players(self, tie_breaker):
+        keypress_info1 = ('Team A', 'a', 1000)
+        keypress_info2 = ('Team A', 'b', 1200)
+        keypress_info3 = ('Team B', 'c', 1500)
+        tie_breaker.handleKeyPress(keypress_info1)
+        
+        assert not tie_breaker.afterBuzzTimer.isActive()
+        assert tie_breaker.keypress is None
+        assert tie_breaker.isFrozen(keypress_info1)
+
+        # Verify other players aren't affected by the frozen buzzer.
+        tie_breaker.startListening()
+        tie_breaker.handleKeyPress(keypress_info2)
+        assert tie_breaker.afterBuzzTimer.isActive()
+        assert tie_breaker.keypress == keypress_info2
+        assert not tie_breaker.isFrozen(keypress_info2)
+        
+        tie_breaker.handleKeyPress(keypress_info3)
+        assert tie_breaker.afterBuzzTimer.isActive()
+        assert tie_breaker.keypress == keypress_info2
+        assert not tie_breaker.isFrozen(keypress_info3)
+
+        tie_breaker.stopListening()
+
+    def test_handleKeyPress_multiple_players_can_be_frozen(self, tie_breaker):
+        keypress_info1 = ('Team A', 'a', 1000)
+        keypress_info2 = ('Team B', 'c', 1200)
+        keypress_info3 = ('Team A', 'a', 1250)
+        keypress_info4 = ('Team B', 'c', 1300)
+        keypress_info5 = ('Team A', 'b', 1500)
+        tie_breaker.handleKeyPress(keypress_info1)
+        
+        assert not tie_breaker.afterBuzzTimer.isActive()
+        assert tie_breaker.keypress is None
+        assert tie_breaker.isFrozen(keypress_info1)
+
+        tie_breaker.handleKeyPress(keypress_info2)
+        assert not tie_breaker.afterBuzzTimer.isActive()
+        assert tie_breaker.keypress is None
+        assert tie_breaker.isFrozen(keypress_info2)
+        
+        tie_breaker.startListening()
+
+        # Verify players a and c are frozen
+        tie_breaker.handleKeyPress(keypress_info3)
+        assert not tie_breaker.afterBuzzTimer.isActive()
+        assert tie_breaker.keypress is None
+        assert tie_breaker.isFrozen(keypress_info3)
+
+        tie_breaker.handleKeyPress(keypress_info4)
+        assert not tie_breaker.afterBuzzTimer.isActive()
+        assert tie_breaker.keypress is None
+        assert tie_breaker.isFrozen(keypress_info4)
+
+        tie_breaker.handleKeyPress(keypress_info5)
+        assert tie_breaker.afterBuzzTimer.isActive()
+        assert tie_breaker.keypress == keypress_info5
+        assert not tie_breaker.isFrozen(keypress_info5)
+
+        tie_breaker.stopListening()
+    
+    def test_handleKeyPress_starts_timer_on_first_keypress(self, tie_breaker):
         keypress_info = ('Team A', 'a', 1000)
         
-        tie_breaker.activate(keypress_info)
+        tie_breaker.startListening()
+        tie_breaker.handleKeyPress(keypress_info)
         
-        assert tie_breaker.timer.isActive()
-        assert tie_breaker.timer.interval() == 500
+        assert tie_breaker.afterBuzzTimer.isActive()
+        assert tie_breaker.afterBuzzTimer.interval() == 500
         assert tie_breaker.keypress == keypress_info
         assert tie_breaker.randomlyChosenTeam is None
+        tie_breaker.stopListening()
     
-    def test_activate_calls_pick_winner_on_second_keypress(self, tie_breaker):
+    def test_handleKeyPress_calls_pick_winner_on_second_keypress(self, tie_breaker):
         first_keypress = ('Team A', 'a', 1000)
         second_keypress = ('Team B', 'd', 1001)
         
+        tie_breaker.startListening()
         with patch.object(tie_breaker, 'pickAWinner', return_value=first_keypress) as mock_pick:
-            tie_breaker.activate(first_keypress)
-            tie_breaker.activate(second_keypress)
+            tie_breaker.handleKeyPress(first_keypress)
+            tie_breaker.handleKeyPress(second_keypress)
             
             mock_pick.assert_called_once_with(second_keypress, first_keypress)
+        tie_breaker.stopListening()
 
 
 class TestPickAWinnerMethod:
@@ -107,7 +216,7 @@ class TestPickAWinnerMethod:
         
         assert result == keypress2
     
-    @patch('utils.TieBreaker.random.choice')
+    @patch('buzzerlogic.TieBreaker.random.choice')
     def test_random_choice_for_same_team_tie(self, mock_choice, tie_breaker):
         keypress1 = ('Team A', 'a', 1000)
         keypress2 = ('Team A', 'b', 1001)
@@ -118,8 +227,8 @@ class TestPickAWinnerMethod:
         mock_choice.assert_called_once_with([keypress1, keypress2])
         assert result == keypress1
     
-    @patch('utils.TieBreaker.random.choice')
-    @patch('utils.TieBreaker.logger')
+    @patch('buzzerlogic.TieBreaker.random.choice')
+    @patch('buzzerlogic.TieBreaker.logger')
     def test_random_choice_for_different_teams_no_history(self, mock_logger, mock_choice, tie_breaker):
         keypress1 = ('Team A', 'a', 1000)
         keypress2 = ('Team B', 'd', 1001)
@@ -133,7 +242,7 @@ class TestPickAWinnerMethod:
         assert 'Team A' in tie_breaker.chosenTeams
         assert tie_breaker.randomlyChosenTeam == 'Team A'
     
-    @patch('utils.TieBreaker.logger')
+    @patch('buzzerlogic.TieBreaker.logger')
     def test_prefers_less_recently_chosen_team(self, mock_logger, tie_breaker):
         tie_breaker.chosenTeams = ['Team B', 'Team A']
         keypress1 = ('Team A', 'a', 1000)
@@ -145,7 +254,7 @@ class TestPickAWinnerMethod:
         mock_logger.info.assert_called_with("TIE! Team C chosen because Team A was randomly chosen more recently.")
         assert tie_breaker.chosenTeams[-1] == 'Team C'
     
-    @patch('utils.TieBreaker.logger')
+    @patch('buzzerlogic.TieBreaker.logger')
     def test_sticks_with_previously_randomly_chosen_team(self, mock_logger, tie_breaker):
         tie_breaker.randomlyChosenTeam = 'Team A'
         keypress1 = ('Team A', 'a', 1000)
@@ -163,7 +272,7 @@ class TestPickAWinnerMethod:
         keypress1 = ('Team A', 'a', 1000)
         keypress2 = ('Team B', 'd', 1001)
         
-        with patch('utils.TieBreaker.random.choice', return_value=keypress1):
+        with patch('buzzerlogic.TieBreaker.random.choice', return_value=keypress1):
             tie_breaker.pickAWinner(keypress1, keypress2)
             
             assert len(tie_breaker.chosenTeams) == 1
@@ -171,12 +280,12 @@ class TestPickAWinnerMethod:
 
 class TestTimeoutBehavior:
     
-    def test_on_timeout_emits_keypress(self, tie_breaker):
+    def test_onAfterBuzzTimeout_emits_keypress(self, tie_breaker):
         keypress_info = ('Team A', 'a', 1000)
         tie_breaker.keypress = keypress_info
         
         with patch.object(tie_breaker, 'playerChosen') as mock_signal:
-            tie_breaker.onTimeout()
+            tie_breaker.onAfterBuzzTimeout()
             
             mock_signal.emit.assert_called_once_with(keypress_info)
 
@@ -187,7 +296,7 @@ class TestEdgeCases:
         keypress1 = ('Team A', 'a', 1000)
         keypress2 = ('Team B', 'd', 1002)
         
-        with patch('utils.TieBreaker.random.choice', return_value=keypress1):
+        with patch('buzzerlogic.TieBreaker.random.choice', return_value=keypress1):
             result = tie_breaker.pickAWinner(keypress1, keypress2)
             
             assert result == keypress1
@@ -196,7 +305,7 @@ class TestEdgeCases:
         keypress1 = ('Team A', 'a', 1000)
         keypress2 = ('Team B', 'd', 1000)
         
-        with patch('utils.TieBreaker.random.choice', return_value=keypress2):
+        with patch('buzzerlogic.TieBreaker.random.choice', return_value=keypress2):
             result = tie_breaker.pickAWinner(keypress1, keypress2)
             
             assert result == keypress2
@@ -205,7 +314,7 @@ class TestEdgeCases:
         keypress1 = ('Team A', 'a', 1002)
         keypress2 = ('Team B', 'd', 1000)
         
-        with patch('utils.TieBreaker.random.choice', return_value=keypress1):
+        with patch('buzzerlogic.TieBreaker.random.choice', return_value=keypress1):
             result = tie_breaker.pickAWinner(keypress1, keypress2)
             
             assert result == keypress1
@@ -218,22 +327,24 @@ class TestSignalEmission:
         assert tie_breaker.playerChosen is not None
 
 
-class TestMultipleActivations:
+class TestMultipleHandleKeypresses:
     
-    def test_multiple_activations_with_timer_active(self, tie_breaker):
+    def test_multiple_handleKeyPress_calls_with_timer_active(self, tie_breaker):
         first_keypress = ('Team A', 'a', 1000)
         second_keypress = ('Team B', 'd', 1001)
         third_keypress = ('Team C', 'g', 1002)
         
-        tie_breaker.activate(first_keypress)
-        assert tie_breaker.timer.isActive()
+        tie_breaker.startListening()
+        tie_breaker.handleKeyPress(first_keypress)
+        assert tie_breaker.afterBuzzTimer.isActive()
         
         with patch.object(tie_breaker, 'pickAWinner', side_effect=[second_keypress, third_keypress]) as mock_pick:
-            tie_breaker.activate(second_keypress)
-            tie_breaker.activate(third_keypress)
+            tie_breaker.handleKeyPress(second_keypress)
+            tie_breaker.handleKeyPress(third_keypress)
             
             assert mock_pick.call_count == 2
             assert tie_breaker.keypress == third_keypress
+        tie_breaker.stopListening()
 
 
 @pytest.mark.parametrize("threshold,time_diff,expected_tie", [
@@ -250,8 +361,10 @@ def test_tie_threshold_scenarios(team_buzzer_info, threshold, time_diff, expecte
     
     keypress1 = ('Team A', 'a', 1000)
     keypress2 = ('Team B', 'd', 1000 + time_diff)
+
+    tie_breaker.startListening()
     
-    with patch('utils.TieBreaker.random.choice', return_value=keypress1) as mock_choice:
+    with patch('buzzerlogic.TieBreaker.random.choice', return_value=keypress1) as mock_choice:
         result = tie_breaker.pickAWinner(keypress1, keypress2)
         
         if expected_tie:
@@ -259,3 +372,4 @@ def test_tie_threshold_scenarios(team_buzzer_info, threshold, time_diff, expecte
         else:
             mock_choice.assert_not_called()
             assert result == keypress1
+    tie_breaker.stopListening()

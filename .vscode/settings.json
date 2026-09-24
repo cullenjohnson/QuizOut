@@ -1,0 +1,15 @@
+{
+    "python.testing.pytestArgs": [
+        "quizout-client"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "python.testing.pytestPath": "${workspaceFolder}/quizout-client/tests/.venv/Scripts/pytest",
+    "python-envs.pythonProjects": [
+        {
+            "path": ".",
+            "envManager": "ms-python.python:venv",
+            "packageManager": "ms-python.python:pip"
+        }
+    ]
+}

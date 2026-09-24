@@ -9,3 +9,4 @@ class SocketClientCommunicator(QObject):
     playerAnswering = Signal(str)
     playerCorrect = Signal(str)
     playerIncorrect = Signal(str)
+    buzzerFrozen = Signal(str)

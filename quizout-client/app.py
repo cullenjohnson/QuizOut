@@ -27,8 +27,10 @@ default_config = {
             "team1": "1,2,3",
             "team2": "4,5,6"
         },
-        'buzzerSystem': {
-            'tieThresholdMS': 2
+        'buzzer_system': {
+            'tie_threshold_ms': 2,
+            'freeze_early_buzzers': 'True',
+            'freeze_timeout_ms': '500'
         }
 }
 

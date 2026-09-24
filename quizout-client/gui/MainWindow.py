@@ -1,6 +1,7 @@
 import asyncio
 import threading
 import logging
+from configparser import ConfigParser
 from PySide6.QtWidgets import QMainWindow, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QMessageBox, QComboBox
 from PySide6.QtCore import Qt, QTimer
 
@@ -8,17 +9,17 @@ from .SoundEffectPlayer import SoundEffectPlayer
 from socketClient.SocketClient import SocketClient
 from socketClient.ServerConfig import ServerConfig
 from data import ClientInfo, TeamBuzzerInfo
+from buzzerlogic.TieBreaker import TieBreaker
 from utils.SocketClientCommunicator import SocketClientCommunicator
-from utils.TieBreaker import TieBreaker
 from utils.Enums import SoundEffect
 
 logger = logging.getLogger(__name__)
 
 class MainWindow(QMainWindow):
-    def __init__(self, config):
+    
+    def __init__(self, config:ConfigParser):
         super().__init__()
         self.connecting = False
-        self.listening = False
 
         self.socketClientComm = SocketClientCommunicator()
         self.socketClientComm.connected.connect(self.on_connected)
@@ -39,7 +40,12 @@ class MainWindow(QMainWindow):
             socketClientCommunicator = self.socketClientComm
         )
 
-        self.tieBreaker = TieBreaker(self.teamBuzzerInfo, config["buzzerSystem"].getint('tieThresholdMS', fallback = 2))
+        self.tieBreaker = TieBreaker(
+            self.teamBuzzerInfo,
+            config["buzzer_system"].getint('tie_threshold_ms', fallback = 2),
+            config["buzzer_system"].getboolean('freeze_early_buzzers', fallback = True),
+            config["buzzer_system"].getint('freeze_timeout_ms', fallback = 500)
+        )
         self.tieBreaker.playerChosen.connect(self.on_player_chosen)
 
         self.loop = asyncio.new_event_loop()
@@ -118,13 +124,13 @@ class MainWindow(QMainWindow):
         logger.info(f"Listening to buzzers! {data}")
         self.soundEffectPlayer.playSound(SoundEffect.ActivateSound)
         self.inactiveTeams = data.get("inactive_teams", [])
-        self.listening = True
+        self.tieBreaker.startListening()
         self.send_buzzers_listening()
 
     def on_buzzer_timeout(self):
-        if self.listening:
+        if self.tieBreaker.isListening():
             logger.info("Buzzers timed out")
-            self.listening = False
+            self.tieBreaker.stopListening()
             self.soundEffectPlayer.playSound(SoundEffect.TimeoutSound)
 
     def on_player_answering(self, playerKey:str):
@@ -152,7 +158,6 @@ class MainWindow(QMainWindow):
 
     # TieBreaker Signal handlers
     def on_player_chosen(self, keyPressInfo):
-        self.listening = False
         (team, key, timestamp) = keyPressInfo
         logger.info(f"Player chosen {keyPressInfo}")
         try:
@@ -197,8 +202,7 @@ class MainWindow(QMainWindow):
 
     # Other methods
     def on_buzzer_key_press(self, keyPressInfo):
-        if self.listening:
-            self.tieBreaker.activate(keyPressInfo, self.inactiveTeams)
+        self.tieBreaker.handleKeyPress(keyPressInfo, self.inactiveTeams)
 
     def send_buzzers_listening(self):
         try:

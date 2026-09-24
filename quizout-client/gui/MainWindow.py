@@ -1,6 +1,7 @@
 import asyncio
 import threading
 import logging
+from configparser import ConfigParser
 from PySide6.QtWidgets import QMainWindow, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QMessageBox, QComboBox
 from PySide6.QtCore import Qt, QTimer
 
@@ -15,7 +16,8 @@ from utils.Enums import SoundEffect
 logger = logging.getLogger(__name__)
 
 class MainWindow(QMainWindow):
-    def __init__(self, config):
+    
+    def __init__(self, config:ConfigParser):
         super().__init__()
         self.connecting = False
 
@@ -38,7 +40,12 @@ class MainWindow(QMainWindow):
             socketClientCommunicator = self.socketClientComm
         )
 
-        self.tieBreaker = TieBreaker(self.teamBuzzerInfo, config["buzzerSystem"].getint('tieThresholdMS', fallback = 2))
+        self.tieBreaker = TieBreaker(
+            self.teamBuzzerInfo,
+            config["buzzer_system"].getint('tie_threshold_ms', fallback = 2),
+            config["buzzer_system"].getboolean('freeze_early_buzzers', fallback = True),
+            config["buzzer_system"].getint('freeze_timeout_ms', fallback = 500)
+        )
         self.tieBreaker.playerChosen.connect(self.on_player_chosen)
 
         self.loop = asyncio.new_event_loop()

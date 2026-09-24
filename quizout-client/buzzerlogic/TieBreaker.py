@@ -14,12 +14,13 @@ class TieBreaker(QObject):
     # Some keyboard buffers treat simultaneous presses as 1ms apart, but always favor the same key. This variable will allow the logic to
     # treat keypresses that are milliseconds apart as simultaneous to try to ensure fairness.
     tieThresholdMS:int = 2
-    
+
+    freezeEarlyBuzzers:bool = True
     freezeTimeoutLengthMS:int = 500
 
     listening:bool = False
 
-    def __init__(self, teamBuzzerInfo:TeamBuzzerInfo, tieThresholdMS:int, freezeTimeoutLengthMS:int = 500):
+    def __init__(self, teamBuzzerInfo:TeamBuzzerInfo, tieThresholdMS:int, freezeEarlyBuzzers:bool = True, freezeTimeoutLengthMS:int = 500):
         self.teamBuzzerInfo = teamBuzzerInfo
         self.allTeams = teamBuzzerInfo.teams
         self.chosenTeams = []
@@ -27,6 +28,7 @@ class TieBreaker(QObject):
         self.afterBuzzTimer.timeout.connect(self.onAfterBuzzTimeout)
         self.keypress = None
         self.tieThresholdMS = tieThresholdMS
+        self.freezeEarlyBuzzers = freezeEarlyBuzzers
         self.freezeTimeoutLengthMS = freezeTimeoutLengthMS
         self.randomlyChosenTeam = None
         self.frozenBuzzers = dict()
@@ -52,14 +54,18 @@ class TieBreaker(QObject):
 
     def handleKeyPress(self, keyPressInfo, inactiveTeams:list = []):
         # If player was frozen previously for buzzing in early, ignore their keypress
-        if self.isFrozen(keyPressInfo):
+        if self.freezeEarlyBuzzers and self.isFrozen(keyPressInfo):
             logger.info(f"Keypress ignored because buzzer '{keyPressInfo[1]}' has been frozen")
             return
 
-        # Player buzzed in early, so freeze the buzzer
+        # Player buzzed in early
         if not self.isListening():
-            logger.info(f"Buzzer '{keyPressInfo[1]}' frozen for buzzing in too early")
-            self.freezeBuzzer(keyPressInfo)
+            # Freeze the buzzer if the optional Jeopardy rule is enabled. If it's not enabled, just ignore the keypress
+            if self.freezeEarlyBuzzers:
+                logger.info(f"Buzzer '{keyPressInfo[1]}' frozen for buzzing in too early")
+                self.freezeBuzzer(keyPressInfo)
+            else:
+                logger.info(f"Buzzer '{keyPressInfo[1]}' ignored because it was too early")
             return
 
         # filter out buzzes from inactive teams
